@@ -1,0 +1,90 @@
+<script>
+
+var deleteUser = function(id)
+{
+    $.ajax("?act=users&del&id=" + id).done(function(reply)
+    {
+        if( reply == "OK" )
+        {
+            location.reload();
+        }else
+        {
+            alert(reply);
+        }
+    });
+}
+
+
+var editUser = function(id, get)
+{
+    if( !get )
+    {
+        $.ajax("?act=users&getform&id=" + id).done(function(form)
+        {
+            $("#modal-edit-user").html(form);
+            $("#modal-edit-user").dialog();
+            $("form[name=users]").on("submit", function()
+            {
+                editUser(id, true);
+                return false;
+            });
+        });
+    }else
+    {
+        data = $("form[name=users]").serialize();
+        data += "&submit";
+        $.post("?act=users&id=" + id, data).done(function(reply)
+        {
+            if( reply == "OK" )
+            {
+                location.reload();
+            }else
+            {
+                alert(reply);
+            }
+        });
+    }
+    return false;
+}
+
+</script>
+
+
+<div id="modal-edit-user" title="Редактирование пользователя"></div>
+        
+<table align="center" width="70%">
+    <th>Логин</th>
+    <th>E-mail</th>
+    <th>ФИО</th>
+    <th>Должность</th>
+    <th>Действия</th>
+
+    <?php foreach( $users as $user ){ ?>
+        <tr>
+            <td align="center"><?php echo $user['login'] ?></td>
+            <td align="center"><?php echo $user['email'] ?></td>
+            <td align="center"><?php echo $user['fio'] ?></td>
+            <td align="center"><?php echo $user_types[$user['type_user']] ?></td>
+            <td aling="center">
+                <button class='delete-button' onclick="deleteUser('<?php echo $user['id'] ?>')"></button>
+                <button class='edit-button' onclick="editUser('<?php echo $user['id'] ?>')"></button>
+            </td>
+        </tr>
+    <?php } ?>
+</table>
+
+
+<center>
+
+    <?php if( $p > 1 ){ ?>
+        <a href="?act=users&amp;p=<?php echo ($p - 1) ?>">Назад</a>
+    <?php }else{ ?>
+        <b>Назад</b>
+    <?php } ?>
+    &nbsp;|&nbsp;
+    <?php if( $p < $all_pages ){ ?>
+        <a href="?act=users&amp;p=<?php echo ($p + 1) ?>">Вперед</a>
+    <?php }else{ ?>
+        <b>Вперед</b>
+    <?php } ?>
+</center>

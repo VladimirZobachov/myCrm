@@ -1,0 +1,124 @@
+body{
+    font-size: 11px;
+}
+
+.click{
+    cursor: pointer;
+    color: blue;
+}
+
+
+input{
+    border: 0px solid #000;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+input:focus{
+    border: 0px solid #000;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+input[type=radio]{
+    width: 19px;
+    height: 19px;
+    margin: -1px 4px 0 0;
+    vertical-align: middle;
+    background-color: #000000;
+    cursor: pointer;
+    border-radius: 20px;
+}
+
+
+sup{
+    font-size: 18px;
+}
+
+th, tr, td{
+    border-right: 1px solid #000;
+    border-bottom: 1px solid #000;
+}
+
+th{
+    background-color: #efefef;
+}
+
+.red{
+    background-color: red;
+}
+
+
+.yellow{
+    background-color: yellow;
+}
+
+
+.green{
+    background-color: #2cf404;
+}
+
+
+button
+{
+    border: 1px outset #000000;
+    height: 20px;
+    width: 20px;
+    font-size: 12px;
+    display: inline-block;
+    clear: both;
+/*     border-radius: 8px; */
+    cursor: pointer;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: white;
+    white-space: nowrap;
+    text-align: center;
+}
+
+
+.edit-button
+{
+/*     background-color: #044170; */
+    background: url(images/edit-blue.png) no-repeat top left;
+}
+
+.copy-button
+{
+    /*     background-color: #044170; */
+    background: url(images/copy.png) no-repeat top left;
+}
+
+
+.delete-button
+{
+/*     background-color: #f20707; */
+    background: url(images/delete-red.png) no-repeat top left;
+}
+
+
+.change-status-button
+{
+/*     background-color: #ffee00; */
+/*     color: black; */
+    background: url(images/change-status.png) no-repeat top left;
+}
+
+
+.change-comment-button
+{
+    background: url(images/edit-notes.png) no-repeat top left;
+/*     background-color: #10ff00; */
+/*     color: black; */
+}
+
+
+.archive-button
+{
+/*     background-color: #aa250a; */
+    background: url(images/archive.png) no-repeat top left;
+}
+
+.unarchive-button
+{
+    background-color: #01b5bf;
+    background: url(images/back.png) no-repeat top left;
+}
