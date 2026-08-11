@@ -54,6 +54,12 @@ export default function OrdersPage() {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <h1 className="font-bold text-lg text-slate-900">MyCRM — заявки</h1>
           <div className="flex items-center gap-2">
+            <a
+              href="/orders/new"
+              className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg px-3 py-2 min-h-[44px] flex items-center"
+            >
+              + Добавить
+            </a>
             <button
               onClick={() => setShowExport(true)}
               className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2"
@@ -130,6 +136,12 @@ export default function OrdersPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">{o.created_for?.fio || 'Монтажник не назначен'}</span>
                     <span className="font-semibold text-slate-900">{o.price} ₽</span>
+                  </div>
+                  <div className="pt-1 flex items-center justify-between">
+                    <a href={`/orders/${o.id}/edit`} className="text-xs text-indigo-600 hover:underline">
+                      Редактировать
+                    </a>
+                    <span className="text-xs text-slate-400">№{o.id}</span>
                   </div>
                 </a>
               ))}

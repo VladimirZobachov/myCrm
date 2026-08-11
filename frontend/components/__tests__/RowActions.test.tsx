@@ -54,7 +54,8 @@ describe('RowActions', () => {
     render(<RowActions order={makeOrder()} role={3} onChanged={onChanged} />);
 
     fireEvent.click(screen.getByText('Статус'));
-    fireEvent.click(screen.getByText('✅ Выполнено'));
+    fireEvent.click(screen.getByLabelText('Выполнено'));
+    fireEvent.click(screen.getByRole('button', { name: 'Применить' }));
 
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
 
@@ -73,8 +74,8 @@ describe('RowActions', () => {
     render(<RowActions order={makeOrder()} role={3} onChanged={() => {}} />);
 
     fireEvent.click(screen.getByText('Комм.'));
-    fireEvent.change(screen.getByPlaceholderText('Текст комментария...'), { target: { value: 'Принял в работу' } });
-    fireEvent.click(screen.getByText('Сохранить'));
+    fireEvent.change(screen.getByLabelText('Комментарий *'), { target: { value: 'Принял в работу' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 
     await waitFor(() => {
       const [url, opts] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
@@ -87,7 +88,7 @@ describe('RowActions', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => makeOrder({ is_archived: 1 }),
+      json: async () => ({ ...makeOrder(), is_archived: 1 }),
     });
 
     const onChanged = vi.fn();

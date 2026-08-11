@@ -32,6 +32,24 @@ export interface Order {
   is_archived: number;
 }
 
+export interface OrderInput {
+  trc?: string;
+  trc_other?: string | null;
+  date?: string;
+  type_work?: string;
+  brand?: string;
+  where_print?: string;
+  where_other?: string | null;
+  photo?: string;
+  price?: string;
+  price_admin?: string;
+  importance?: string;
+  importance_other?: string;
+  created_for?: string | number | null;
+  status?: number;
+  is_archived?: number;
+}
+
 export interface Paginated<T> {
   data: T[];
   total: number;
@@ -104,13 +122,13 @@ export const api = {
     return request<Paginated<Order>>(`/orders?${qs}`);
   },
   order: (id: number) => request<Order>(`/orders/${id}`),
-  createOrder: (data: Partial<Order>) => request<Order>('/orders', { method: 'POST', body: JSON.stringify(data) }),
-  updateOrder: (id: number, data: Partial<Order>) =>
+  createOrder: (data: OrderInput) => request<Order>('/orders', { method: 'POST', body: JSON.stringify(data) }),
+  updateOrder: (id: number, data: OrderInput) =>
     request<Order>(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   updateStatus: (id: number, status: number) =>
     request<Order>(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
-  updateComment: (id: number, comment: string) =>
-    request<Order>(`/orders/${id}/comment`, { method: 'PATCH', body: JSON.stringify({ comment }) }),
+  updateComment: (id: number, comment: string, forUser?: number) =>
+    request<Order>(`/orders/${id}/comment`, { method: 'PATCH', body: JSON.stringify({ comment, ...(forUser !== undefined ? { for: forUser } : {}) }) }),
   archive: (id: number, archived: boolean) =>
     request<Order>(`/orders/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ archived }) }),
 };

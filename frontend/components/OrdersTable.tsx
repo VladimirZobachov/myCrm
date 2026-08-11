@@ -29,7 +29,7 @@ const COLUMNS: Column[] = [
   },
   {
     key: 'trc', label: 'ТРЦ', sortable: true, visibleFor: [1, 2, 3],
-    render: (o) => <span className="font-medium text-slate-800">{o.trc}</span>,
+    render: (o) => <a href={`/orders/${o.id}`} className="font-medium text-indigo-600 hover:underline">{o.trc}</a>,
   },
   {
     key: 'type_work', label: 'Вид работ', visibleFor: [1, 2, 3],
