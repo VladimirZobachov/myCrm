@@ -60,6 +60,12 @@ export default function OrdersPage() {
             >
               + Добавить
             </a>
+            <a
+              href="/users"
+              className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2 flex items-center"
+            >
+              Пользователи
+            </a>
             <button
               onClick={() => setShowExport(true)}
               className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2"
