@@ -7,25 +7,23 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Реальная схема sessions из прод-дампа firmaacru_crm.sql (11.08.2026).
+     * time — int(20) unixtimestamp.
      */
     public function up(): void
     {
         Schema::create('sessions', function (Blueprint $table) {
-            $table->increments('id');
-            $table->unsignedInteger('user_id');
-            $table->string('sessid', 128);
-            $table->bigInteger('time')->comment('unixtimestamp');
+            $table->integer('id', false, true);
+            $table->string('sessid', 100);
+            $table->integer('user_id');
+            $table->bigInteger('time');
 
-            $table->index('user_id', 'idx_sessions_user');
-            $table->index('sessid', 'idx_sessions_sessid');
-            $table->index('time', 'idx_sessions_time');
+            $table->primary('id');
+            $table->index('sessid');
+            $table->index('user_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('sessions');

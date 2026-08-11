@@ -7,43 +7,40 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Реальная схема orders из прод-дампа firmaacru_crm.sql (11.08.2026).
+     * price/price_admin — VARCHAR(100): legacy хранит «По факту», «-», «-456».
+     * Поля комментариев: comments (общий) + comment_manager (не admin/mounter!).
      */
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->increments('id');
+            $table->integer('id', false, true);
             $table->dateTime('date_create')->useCurrent();
-            $table->date('date');
-            $table->string('trc', 255)->nullable();
-            $table->string('trc_other', 255)->nullable();
-            $table->text('type_work')->nullable();
-            $table->string('brand', 255)->nullable();
-            $table->string('where_print', 255)->nullable();
-            $table->string('where_other', 255)->nullable();
-            $table->text('photo')->nullable()->comment('текстовые ссылки через пробел (legacy)');
-            $table->decimal('price', 12, 2)->default(0);
-            $table->decimal('price_admin', 12, 2)->nullable()->comment('цена для админа (price*0.7)');
-            $table->string('importance', 255)->nullable();
-            $table->string('importance_other', 255)->nullable();
-            $table->unsignedInteger('created_by')->comment('кто создал (менеджер)');
-            $table->unsignedInteger('created_for')->nullable()->comment('кому назначено (монтажник)');
-            $table->text('comment_admin')->nullable();
-            $table->text('comment_mounter')->nullable();
-            $table->tinyInteger('status')->default(1)->comment('1=В ожидании, 2=Принят, 3=Выполнено');
+            $table->date('date')->nullable();
+            $table->string('trc', 200);
+            $table->string('trc_other', 300)->nullable();
+            $table->string('type_work', 500);
+            $table->string('brand', 500);
+            $table->string('where_print', 500);
+            $table->string('where_other', 500)->nullable();
+            $table->string('photo', 200);
+            $table->string('price', 100);
+            $table->string('price_admin', 100)->default('0');
+            $table->string('importance', 500);
+            $table->string('importance_other', 500);
+            $table->integer('created_by')->nullable();
+            $table->integer('created_for')->nullable();
+            $table->tinyInteger('status')->default(1);
+            $table->string('comments', 500)->nullable();
             $table->tinyInteger('is_archived')->default(0);
+            $table->string('comment_manager', 500)->default('');
 
-            $table->index('created_by', 'idx_orders_created_by');
-            $table->index('created_for', 'idx_orders_created_for');
-            $table->index('status', 'idx_orders_status');
-            $table->index('is_archived', 'idx_orders_is_archived');
-            $table->index('date', 'idx_orders_date');
+            $table->primary('id');
+            $table->index('trc');
+            $table->index('date');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('orders');

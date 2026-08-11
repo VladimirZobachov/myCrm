@@ -7,26 +7,26 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Реальная схема из прод-дампа firmaacru_crm.sql (11.08.2026).
+     * Важно: price/price_admin — VARCHAR, т.к. в legacy хранятся нечисловые
+     * значения («По факту», «-», «-456», «5500+»).
      */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->increments('id');
+            $table->integer('id', false, true);
+            $table->string('email', 300);
             $table->string('login', 100);
-            $table->string('email', 255);
-            $table->string('fio', 255)->nullable();
-            $table->string('passwd', 255);
-            $table->tinyInteger('type_user')->default(3)->comment('1=админ, 2=менеджер, 3=монтажник');
+            $table->string('passwd', 100);
+            $table->tinyInteger('type_user');
+            $table->string('fio', 500)->default('');
 
-            $table->unique('login', 'uq_users_login');
-            $table->unique('email', 'uq_users_email');
+            $table->primary('id');
+            $table->index('login');
+            $table->index('email');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

@@ -30,11 +30,10 @@ class UpdateOrderRequest extends FormRequest
             'created_for' => 'sometimes|nullable|integer|exists:users,id',
             'status' => ['sometimes', Rule::in([1, 2, 3])],
             'is_archived' => 'sometimes|boolean',
-            'comment_admin' => 'sometimes|nullable|string',
-            'comment_mounter' => 'sometimes|nullable|string',
+            'comments' => 'sometimes|nullable|string',
+            'comment_manager' => 'sometimes|nullable|string',
         ];
     }
-
     public function messages(): array
     {
         return [

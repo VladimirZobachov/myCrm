@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class OrderTest extends TestCase
@@ -42,7 +41,7 @@ class OrderTest extends TestCase
 
         $response = $this->withToken($token)->postJson('/api/orders', $this->orderData());
         $response->assertStatus(201)
-            ->assertJsonPath('price_admin', '3500.00');
+            ->assertJsonPath('price_admin', '3500');
     }
 
     public function test_manager_can_create_order(): void
@@ -71,8 +70,8 @@ class OrderTest extends TestCase
 
         // Админ создаёт заказ для монтажника
         $tokenAdmin = auth('api')->login($admin);
-        $order = $this->withToken($tokenAdmin)->postJson('/api/orders', $this->orderData(['created_for' => $mounter->id]))
-            ->assertStatus(201)->json();
+        $this->withToken($tokenAdmin)->postJson('/api/orders', $this->orderData(['created_for' => $mounter->id]))
+            ->assertStatus(201);
 
         // Менеджер видит только свои
         $tokenManager = auth('api')->login($manager);
@@ -113,7 +112,7 @@ class OrderTest extends TestCase
             ->assertJsonPath('created_for.id', $mounter->id);
     }
 
-    public function test_comment_goes_to_correct_field_by_role(): void
+    public function test_mounter_comment_goes_to_comments_field(): void
     {
         $admin = $this->makeUser(1);
         $mounter = $this->makeUser(3);
@@ -122,12 +121,28 @@ class OrderTest extends TestCase
         $order = $this->withToken($tokenAdmin)->postJson('/api/orders', $this->orderData())
             ->assertStatus(201)->json();
 
-        // Монтажник пишет комментарий → comment_mounter
+        // Монтажник пишет комментарий → comments (legacy updateComment)
         $tokenMounter = auth('api')->login($mounter);
         $this->withToken($tokenMounter)
             ->patchJson("/api/orders/{$order['id']}/comment", ['comment' => 'Принял в работу'])
             ->assertOk()
-            ->assertJsonPath('comment_mounter', 'Принял в работу');
+            ->assertJsonPath('comments', 'Принял в работу');
+    }
+
+    public function test_manager_comment_goes_to_comment_manager_field(): void
+    {
+        $manager = $this->makeUser(2);
+
+        // Менеджер создаёт заказ сам (иначе 403: он может править только свои)
+        $tokenManager = auth('api')->login($manager);
+        $order = $this->withToken($tokenManager)->postJson('/api/orders', $this->orderData())
+            ->assertStatus(201)->json();
+
+        // Менеджер пишет комментарий → comment_manager
+        $this->withToken($tokenManager)
+            ->patchJson("/api/orders/{$order['id']}/comment", ['comment' => 'Комментарий менеджера'])
+            ->assertOk()
+            ->assertJsonPath('comment_manager', 'Комментарий менеджера');
     }
 
     public function test_archive_order(): void
@@ -155,7 +170,7 @@ class OrderTest extends TestCase
         $this->withToken($token)
             ->patchJson("/api/orders/{$order['id']}", ['price' => 7000])
             ->assertOk()
-            ->assertJsonPath('price_admin', '4900.00');
+            ->assertJsonPath('price_admin', '4900');
     }
 
     public function test_validation_requires_importance(): void

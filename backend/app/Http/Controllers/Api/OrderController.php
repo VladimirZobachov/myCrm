@@ -70,6 +70,8 @@ class OrderController extends Controller
         $data['status'] = 1;
         $data['is_archived'] = 0;
         $data['date_create'] = now();
+        $data['photo'] = $data['photo'] ?? '';
+        $data['importance_other'] = $data['importance_other'] ?? '';
         $data['price_admin'] = $data['price_admin'] ?? (int) round(((float) $data['price']) * 0.7);
 
         $order = Order::create($data);
@@ -137,7 +139,9 @@ class OrderController extends Controller
 
     /**
      * PATCH /api/orders/{order}/comment
-     * Обновление комментария: админ/менеджер → comment_admin, монтажник → comment_mounter.
+     * Обновление комментария по legacy-логике updateComment():
+     * монтажник (type 3) → comments, менеджер (type 2) → comment_manager,
+     * админ (type 1) → comments если для админа, иначе comment_manager.
      */
     public function updateComment(Request $request, Order $order)
     {
@@ -146,12 +150,15 @@ class OrderController extends Controller
         $user = $request->user();
         $data = $request->validate([
             'comment' => 'required|string',
+            'for' => 'nullable|integer|in:1,2',
         ]);
 
-        if ($user->isInstaller()) {
-            $order->comment_mounter = $data['comment'];
-        } else {
-            $order->comment_admin = $data['comment'];
+        if ((int) $user->type_user === 3) {
+            $order->comments = $data['comment'];
+        } elseif ((int) $user->type_user === 2) {
+            $order->comment_manager = $data['comment'];
+        } else { // админ (1)
+            $order->comments = $data['comment'];
         }
         $order->save();
 

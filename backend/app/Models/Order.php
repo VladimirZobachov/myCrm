@@ -26,8 +26,8 @@ class Order extends Model
         'importance_other',
         'created_by',
         'created_for',
-        'comment_admin',
-        'comment_mounter',
+        'comments',
+        'comment_manager',
         'status',
         'is_archived',
     ];
@@ -37,8 +37,8 @@ class Order extends Model
         return [
             'date_create' => 'datetime',
             'date' => 'date',
-            'price' => 'decimal:2',
-            'price_admin' => 'decimal:2',
+            'price' => 'string',
+            'price_admin' => 'string',
             'created_by' => 'integer',
             'created_for' => 'integer',
             'status' => 'integer',
