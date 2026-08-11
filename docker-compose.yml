@@ -14,7 +14,7 @@ services:
       MYSQL_USER: mycrm
       MYSQL_PASSWORD: mycrm
     ports:
-      - "3306:3306"
+      - "3307:3306"  # ВНУТРЕННИЙ порт (не публикуем наружу!)
     volumes:
       - mycrm_db_data:/var/lib/mysql
       - ./docker/db/init:/docker-entrypoint-initdb.d:ro
