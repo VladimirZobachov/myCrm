@@ -1,0 +1,43 @@
+# Локальная среда для myCRM (legacy PHP-монолит)
+# Запуск: docker compose up -d
+# Сайт: http://localhost:8080
+version: "3.8"
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: mycrm_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: firmaacru_crm
+      MYSQL_USER: mycrm
+      MYSQL_PASSWORD: mycrm
+    ports:
+      - "3306:3306"
+    volumes:
+      - mycrm_db_data:/var/lib/mysql
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: mycrm_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini:ro
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_USER: mycrm
+      DB_PASS: mycrm
+      DB_NAME: firmaacru_crm
+
+volumes:
+  mycrm_db_data:

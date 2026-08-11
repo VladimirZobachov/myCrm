@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>myCRM — UI-кит (Итерация 1)</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS — 1:1 маппинг из docker/design/tokens.json
+     (те же имена переменных, что и в prototype-orders.html)
+     ============================================================ */
+  :root{
+    --c-primary-50:#eef2ff;  --c-primary-100:#e0e7ff; --c-primary-200:#c7d2fe;
+    --c-primary-300:#a5b4fc; --c-primary-400:#818cf8; --c-primary-500:#6366f1;
+    --c-primary-600:#4f46e5; --c-primary-700:#4338ca; --c-primary-800:#3730a3; --c-primary-900:#312e81;
+
+    --c-surface:#ffffff; --c-surface-alt:#f8fafc; --c-surface-sunken:#f1f5f9;
+    --c-ink:#0f172a; --c-ink-2:#334155; --c-muted:#64748b; --c-muted-2:#94a3b8;
+    --c-border:#e2e8f0; --c-border-strong:#cbd5e1;
+
+    --c-success:#16a34a; --c-success-bg:#f0fdf4; --c-success-border:#bbf7d0;
+    --c-warning:#d97706; --c-warning-bg:#fffbeb; --c-warning-border:#fde68a;
+    --c-danger:#dc2626;  --c-danger-bg:#fef2f2;  --c-danger-border:#fecaca;
+    --c-info:#0284c7;    --c-info-bg:#f0f9ff;    --c-info-border:#bae6fd;
+
+    --font-base: Inter, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+    --fs-xs:12px;   --lh-xs:16px;
+    --fs-sm:13px;   --lh-sm:18px;
+    --fs-base:14px; --lh-base:20px;
+    --fs-md:16px;   --lh-md:24px;
+    --fs-h4:18px;   --lh-h4:24px;
+    --fs-h3:20px;   --lh-h3:28px;
+    --fs-h2:24px;   --lh-h2:32px;
+    --fs-h1:30px;   --lh-h1:38px;
+
+    --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700;
+
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-12:48px;
+
+    --r-sm:4px; --r-md:8px; --r-lg:12px; --r-full:9999px;
+
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+    --shadow-md:0 4px 8px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.06);
+    --shadow-lg:0 12px 24px rgba(15,23,42,.12), 0 4px 8px rgba(15,23,42,.06);
+
+    --dur-fast:100ms; --dur-normal:180ms; --dur-slow:280ms;
+    --ease-standard:cubic-bezier(.4,0,.2,1);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:var(--font-base);
+    font-size:var(--fs-base);
+    line-height:var(--lh-base);
+    color:var(--c-ink);
+    background:var(--c-surface-alt);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- layout ---------- */
+  .page{
+    max-width:1080px;
+    margin:0 auto;
+    padding:var(--sp-8) var(--sp-6) var(--sp-12);
+  }
+  .page-header{
+    margin-bottom:var(--sp-8);
+  }
+  .page-header h1{
+    margin:0 0 var(--sp-2);
+    font-size:var(--fs-h1);
+    line-height:var(--lh-h1);
+    font-weight:var(--fw-bold);
+  }
+  .page-header p{
+    margin:0;
+    color:var(--c-muted);
+    font-size:var(--fs-md);
+    line-height:var(--lh-md);
+  }
+  .section{
+    margin-bottom:var(--sp-8);
+  }
+  .section h2{
+    font-size:var(--fs-h3);
+    line-height:var(--lh-h3);
+    font-weight:var(--fw-semibold);
+    margin:0 0 var(--sp-1);
+  }
+  .section .section-desc{
+    margin:0 0 var(--sp-4);
+    color:var(--c-muted);
+    font-size:var(--fs-sm);
+    line-height:var(--lh-sm);
+  }
+  .swatch-row, .row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:var(--sp-3);
+  }
+  .col{
+    display:flex;
+    flex-direction:column;
+    gap:var(--sp-3);
+  }
+  code{
+    font-family:var(--font-mono);
+    font-size:var(--fs-xs);
+    background:var(--c-surface-sunken);
+    border:1px solid var(--c-border);
+    border-radius:var(--r-sm);
+    padding:1px 6px;
+  }
+
+  /* ============================================================
+     1. BUTTONS
+     ============================================================ */
+  .btn{
+    appearance:none;
+    -webkit-appearance:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:var(--sp-2);
+    font-family:inherit;
+    font-size:var(--fs-base);
+    line-height:1;
+    font-weight:var(--fw-medium);
+    border-radius:var(--r-md);
+    border:1px solid transparent;
+    padding:0 var(--sp-4);
+    height:38px;
+    cursor:pointer;
+    transition:background-color var(--dur-fast) var(--ease-standard),
+               border-color var(--dur-fast) var(--ease-standard),
+               box-shadow var(--dur-fast) var(--ease-standard),
+               opacity var(--dur-fast) var(--ease-standard);
+    box-shadow:var(--shadow-sm);
+  }
+  .btn:focus-visible{
+    outline:2px solid var(--c-primary-400);
+    outline-offset:2px;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn:disabled{ cursor:not-allowed; opacity:.5; box-shadow:none; }
+
+  .btn-primary{ background:var(--c-primary-600); border-color:var(--c-primary-600); color:#fff; }
+  .btn-primary:hover:not(:disabled){ background:var(--c-primary-700); border-color:var(--c-primary-700); }
+
+  .btn-secondary{ background:var(--c-surface-sunken); border-color:var(--c-border); color:var(--c-ink); }
+  .btn-secondary:hover:not(:disabled){ background:var(--c-border); }
+
+  .btn-outline{ background:var(--c-surface); border-color:var(--c-border-strong); color:var(--c-ink); box-shadow:none; }
+  .btn-outline:hover:not(:disabled){ background:var(--c-surface-alt); border-color:var(--c-primary-400); }
+
+  .btn-ghost{ background:transparent; border-color:transparent; color:var(--c-ink-2); box-shadow:none; }
+  .btn-ghost:hover:not(:disabled){ background:var(--c-surface-sunken); }
+
+  .btn-danger{ background:var(--c-danger); border-color:var(--c-danger); color:#fff; }
+  .btn-danger:hover:not(:disabled){ background:#b91c1c; border-color:#b91c1c; }
+
+  .btn-sm{ height:30px; padding:0 var(--sp-3); font-size:var(--fs-sm); border-radius:var(--r-sm); }
+  .btn-lg{ height:46px; padding:0 var(--sp-6); font-size:var(--fs-md); }
+
+  /* ============================================================
+     2. FORM CONTROLS
+     ============================================================ */
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:var(--sp-1);
+    width:100%;
+    max-width:280px;
+  }
+  .field label{
+    font-size:var(--fs-sm);
+    font-weight:var(--fw-medium);
+    color:var(--c-ink-2);
+  }
+  .field .hint{
+    font-size:var(--fs-xs);
+    color:var(--c-muted);
+  }
+  .field .error-text{
+    font-size:var(--fs-xs);
+    color:var(--c-danger);
+  }
+
+  .input, select.input, textarea.input{
+    width:100%;
+    font-family:inherit;
+    font-size:var(--fs-md);
+    color:var(--c-ink);
+    background:var(--c-surface);
+    border:1px solid var(--c-border-strong);
+    border-radius:var(--r-md);
+    padding:0 var(--sp-3);
+    height:40px;
+    transition:border-color var(--dur-fast) var(--ease-standard),
+               box-shadow var(--dur-fast) var(--ease-standard);
+  }
+  textarea.input{
+    height:auto;
+    min-height:88px;
+    padding:var(--sp-2) var(--sp-3);
+    resize:vertical;
+  }
+  .input::placeholder{ color:var(--c-muted-2); }
+  .input:hover{ border-color:var(--c-muted-2); }
+  .input:focus{
+    outline:none;
+    border-color:var(--c-primary-500);
+    box-shadow:0 0 0 3px var(--c-primary-100);
+  }
+  .input:disabled{
+    background:var(--c-surface-sunken);
+    color:var(--c-muted-2);
+    cursor:not-allowed;
+    border-color:var(--c-border);
+  }
+  .input.is-error{ border-color:var(--c-danger); }
+  .input.is-error:focus{ box-shadow:0 0 0 3px var(--c-danger-bg); border-color:var(--c-danger); }
+
+  select.input{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right var(--sp-3) center;
+    padding-right:var(--sp-8);
+  }
+
+  .check-row, .radio-row{
+    display:flex;
+    align-items:center;
+    gap:var(--sp-2);
+    font-size:var(--fs-base);
+    color:var(--c-ink);
+    cursor:pointer;
+  }
+  input[type="checkbox"], input[type="radio"]{
+    width:18px;
+    height:18px;
+    accent-color:var(--c-primary-600);
+    cursor:pointer;
+  }
+  input[type="checkbox"]:disabled, input[type="radio"]:disabled{ cursor:not-allowed; }
+  .check-row:has(input:disabled), .radio-row:has(input:disabled){ color:var(--c-muted-2); cursor:not-allowed; }
+
+  /* ============================================================
+     3. CARD
+     ============================================================ */
+  .card{
+    background:var(--c-surface);
+    border:1px solid var(--c-border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-sm);
+    overflow:hidden;
+  }
+  .card-header{
+    padding:var(--sp-4) var(--sp-6);
+    border-bottom:1px solid var(--c-border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:var(--sp-3);
+  }
+  .card-header h3{
+    margin:0;
+    font-size:var(--fs-h4);
+    line-height:var(--lh-h4);
+    font-weight:var(--fw-semibold);
+  }
+  .card-header .card-subtitle{
+    margin:2px 0 0;
+    font-size:var(--fs-sm);
+    color:var(--c-muted);
+  }
+  .card-body{
+    padding:var(--sp-6);
+    color:var(--c-ink-2);
+  }
+  .card-footer{
+    padding:var(--sp-3) var(--sp-6);
+    border-top:1px solid var(--c-border);
+    background:var(--c-surface-alt);
+    display:flex;
+    justify-content:flex-end;
+    gap:var(--sp-2);
+  }
+
+  /* ============================================================
+     4. TABLE
+     ============================================================ */
+  .table-wrap{
+    background:var(--c-surface);
+    border:1px solid var(--c-border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-sm);
+    overflow:hidden;
+  }
+  table.dtable{
+    width:100%;
+    border-collapse:collapse;
+    font-size:var(--fs-base);
+  }
+  table.dtable thead th{
+    text-align:left;
+    font-size:var(--fs-xs);
+    font-weight:var(--fw-semibold);
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--c-muted);
+    background:var(--c-surface-alt);
+    padding:var(--sp-3) var(--sp-4);
+    border-bottom:1px solid var(--c-border);
+    white-space:nowrap;
+  }
+  table.dtable tbody td{
+    padding:var(--sp-3) var(--sp-4);
+    border-bottom:1px solid var(--c-border);
+    color:var(--c-ink-2);
+    vertical-align:middle;
+  }
+  table.dtable tbody tr:last-child td{ border-bottom:none; }
+  table.dtable tbody tr{ transition:background-color var(--dur-fast) var(--ease-standard); }
+  table.dtable tbody tr:hover{ background:var(--c-surface-alt); }
+  table.dtable td.num{ font-family:var(--font-mono); font-size:var(--fs-sm); }
+  table.dtable td.cell-strong{ color:var(--c-ink); font-weight:var(--fw-medium); }
+
+  /* ============================================================
+     5. DIALOG (modal)
+     ============================================================ */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(15,23,42,.5);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:var(--sp-4);
+    z-index:100;
+  }
+  .overlay.is-open{ display:flex; }
+  .dialog{
+    width:100%;
+    max-width:420px;
+    background:var(--c-surface);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-lg);
+    animation:dialog-in var(--dur-normal) var(--ease-standard);
+  }
+  @keyframes dialog-in{
+    from{ opacity:0; transform:translateY(8px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .dialog-header{
+    padding:var(--sp-4) var(--sp-6);
+    border-bottom:1px solid var(--c-border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .dialog-header h3{ margin:0; font-size:var(--fs-h4); font-weight:var(--fw-semibold); }
+  .dialog-close{
+    border:none; background:transparent; cursor:pointer;
+    color:var(--c-muted); font-size:20px; line-height:1;
+    padding:var(--sp-1); border-radius:var(--r-sm);
+  }
+  .dialog-close:hover{ background:var(--c-surface-sunken); color:var(--c-ink); }
+  .dialog-body{ padding:var(--sp-6); color:var(--c-ink-2); font-size:var(--fs-base); }
+  .dialog-footer{
+    padding:var(--sp-3) var(--sp-6);
+    border-top:1px solid var(--c-border);
+    display:flex; justify-content:flex-end; gap:var(--sp-2);
+  }
+
+  /* ============================================================
+     6. BADGES
+     ============================================================ */
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:var(--fs-xs);
+    font-weight:var(--fw-medium);
+    line-height:1;
+    padding:6px 10px;
+    border-radius:var(--r-full);
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+  .badge::before{
+    content:"";
+    width:6px; height:6px;
+    border-radius:50%;
+    background:currentColor;
+    flex:none;
+  }
+  .badge-success{ background:var(--c-success-bg); border-color:var(--c-success-border); color:var(--c-success); }
+  .badge-warning{ background:var(--c-warning-bg); border-color:var(--c-warning-border); color:var(--c-warning); }
+  .badge-danger{  background:var(--c-danger-bg);  border-color:var(--c-danger-border);  color:var(--c-danger); }
+  .badge-info{    background:var(--c-info-bg);    border-color:var(--c-info-border);    color:var(--c-info); }
+
+  /* ============================================================
+     7. DROPDOWN MENU
+     ============================================================ */
+  .dropdown{ position:relative; display:inline-block; }
+  .dropdown-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;
+    min-width:200px;
+    background:var(--c-surface);
+    border:1px solid var(--c-border);
+    border-radius:var(--r-md);
+    box-shadow:var(--shadow-md);
+    padding:var(--sp-1);
+    display:none;
+    z-index:20;
+  }
+  .dropdown.is-open .dropdown-menu{ display:block; }
+  .dropdown-item{
+    display:flex;
+    align-items:center;
+    gap:var(--sp-2);
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    font-family:inherit;
+    font-size:var(--fs-base);
+    color:var(--c-ink-2);
+    padding:var(--sp-2) var(--sp-3);
+    border-radius:var(--r-sm);
+    cursor:pointer;
+  }
+  .dropdown-item:hover{ background:var(--c-surface-alt); color:var(--c-ink); }
+  .dropdown-item.danger{ color:var(--c-danger); }
+  .dropdown-item.danger:hover{ background:var(--c-danger-bg); }
+  .dropdown-sep{ height:1px; background:var(--c-border); margin:var(--sp-1) 4px; }
+
+  /* ============================================================
+     8. TABS
+     ============================================================ */
+  .tabs{ width:100%; }
+  .tabs-list{
+    display:flex;
+    gap:var(--sp-1);
+    border-bottom:1px solid var(--c-border);
+  }
+  .tab-btn{
+    appearance:none;
+    background:none;
+    border:none;
+    border-bottom:2px solid transparent;
+    font-family:inherit;
+    font-size:var(--fs-base);
+    font-weight:var(--fw-medium);
+    color:var(--c-muted);
+    padding:var(--sp-2) var(--sp-3) var(--sp-3);
+    cursor:pointer;
+    margin-bottom:-1px;
+    transition:color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+  }
+  .tab-btn:hover{ color:var(--c-ink); }
+  .tab-btn.is-active{ color:var(--c-primary-600); border-bottom-color:var(--c-primary-600); }
+  .tab-panel{ display:none; padding:var(--sp-4) 0; color:var(--c-ink-2); font-size:var(--fs-base); }
+  .tab-panel.is-active{ display:block; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-header">
+    <h1>myCRM UI-кит</h1>
+    <p>Итерация 1 — базовые компоненты на токенах из <code>docker/design/tokens.json</code>, стиль shadcn/ui на чистом CSS.</p>
+  </header>
+
+  <!-- 1. BUTTONS -->
+  <section class="section">
+    <h2>1. Кнопки</h2>
+    <p class="section-desc">Варианты: primary, secondary, outline, ghost, danger. Размеры: sm / default / lg.</p>
+    <div class="col">
+      <div class="swatch-row">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-secondary">Secondary</button>
+        <button class="btn btn-outline">Outline</button>
+        <button class="btn btn-ghost">Ghost</button>
+        <button class="btn btn-danger">Danger</button>
+        <button class="btn btn-primary" disabled>Disabled</button>
+      </div>
+      <div class="swatch-row">
+        <button class="btn btn-primary btn-sm">Sm</button>
+        <button class="btn btn-primary">Default</button>
+        <button class="btn btn-primary btn-lg">Lg</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. INPUTS -->
+  <section class="section">
+    <h2>2. Поля ввода</h2>
+    <p class="section-desc">Text, select, textarea, checkbox, radio — состояния default / focus / error / disabled.</p>
+    <div class="row" style="align-items:flex-start;">
+      <div class="field">
+        <label for="in-default">Название объекта</label>
+        <input id="in-default" class="input" type="text" placeholder="ТЦ «Галерея», 2 этаж">
+      </div>
+      <div class="field">
+        <label for="in-focus">В фокусе (кликните)</label>
+        <input id="in-focus" class="input" type="text" placeholder="Кликните сюда">
+      </div>
+      <div class="field">
+        <label for="in-error">Телефон монтажника</label>
+        <input id="in-error" class="input is-error" type="text" value="+7 900" aria-invalid="true">
+        <span class="error-text">Введите номер полностью</span>
+      </div>
+      <div class="field">
+        <label for="in-disabled">Номер заявки</label>
+        <input id="in-disabled" class="input" type="text" value="ORD-10432" disabled>
+      </div>
+    </div>
+    <div class="row" style="align-items:flex-start; margin-top:var(--sp-4);">
+      <div class="field">
+        <label for="sel-1">Статус монтажа</label>
+        <select id="sel-1" class="input">
+          <option>Новая</option>
+          <option>В работе</option>
+          <option>На согласовании</option>
+          <option>Завершена</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:360px;">
+        <label for="ta-1">Комментарий</label>
+        <textarea id="ta-1" class="input" placeholder="Особенности доступа на объект, пропуск и т.д.">Требуется пропуск на служебный вход с 08:00.</textarea>
+      </div>
+    </div>
+    <div class="row" style="margin-top:var(--sp-4);">
+      <label class="check-row"><input type="checkbox" checked> Уведомлять по SMS</label>
+      <label class="check-row"><input type="checkbox"> Требуется подъёмник</label>
+      <label class="check-row"><input type="checkbox" disabled> Архивная заявка (недоступно)</label>
+    </div>
+    <div class="row" style="margin-top:var(--sp-3);">
+      <label class="radio-row"><input type="radio" name="priority" checked> Обычный приоритет</label>
+      <label class="radio-row"><input type="radio" name="priority"> Срочно</label>
+      <label class="radio-row"><input type="radio" name="priority" disabled> Недоступно</label>
+    </div>
+  </section>
+
+  <!-- 3. CARD -->
+  <section class="section">
+    <h2>3. Карточка</h2>
+    <p class="section-desc">Card с заголовком, подзаголовком, контентом и футером-действиями.</p>
+    <div class="card" style="max-width:480px;">
+      <div class="card-header">
+        <div>
+          <h3>Заявка ORD-10432</h3>
+          <p class="card-subtitle">ТЦ «Галерея», монтаж баннера 3×2 м</p>
+        </div>
+        <span class="badge badge-warning">В работе</span>
+      </div>
+      <div class="card-body">
+        Монтажная бригада №2 выехала на объект в 09:40. Ожидаемое время
+        завершения — сегодня до 14:00. Требуется согласование места крепления
+        с администрацией ТЦ.
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-ghost btn-sm">Отмена</button>
+        <button class="btn btn-primary btn-sm">Открыть заявку</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. TABLE -->
+  <section class="section">
+    <h2>4. Таблица</h2>
+    <p class="section-desc">Список заявок с заголовком и строками данных.</p>
+    <div class="table-wrap">
+      <table class="dtable">
+        <thead>
+          <tr>
+            <th>№ заявки</th>
+            <th>Объект</th>
+            <th>Бригада</th>
+            <th>Статус</th>
+            <th>Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cell-strong">ORD-10432</td>
+            <td>ТЦ «Галерея»</td>
+            <td>Бригада №2</td>
+            <td><span class="badge badge-warning">В работе</span></td>
+            <td class="num">84 500 ₽</td>
+          </tr>
+          <tr>
+            <td class="cell-strong">ORD-10431</td>
+            <td>ТРЦ «Аврора»</td>
+            <td>Бригада №1</td>
+            <td><span class="badge badge-success">Завершена</span></td>
+            <td class="num">132 000 ₽</td>
+          </tr>
+          <tr>
+            <td class="cell-strong">ORD-10430</td>
+            <td>БЦ «Меркурий»</td>
+            <td>—</td>
+            <td><span class="badge badge-danger">Просрочена</span></td>
+            <td class="num">57 200 ₽</td>
+          </tr>
+          <tr>
+            <td class="cell-strong">ORD-10429</td>
+            <td>ТЦ «Порт»</td>
+            <td>Бригада №3</td>
+            <td><span class="badge badge-info">Новая</span></td>
+            <td class="num">21 900 ₽</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. DIALOG -->
+  <section class="section">
+    <h2>5. Диалог (модалка)</h2>
+    <p class="section-desc">Открытие/закрытие модального окна.</p>
+    <button class="btn btn-primary" id="dialog-open-btn">Удалить заявку</button>
+
+    <div class="overlay" id="dialog-overlay">
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+        <div class="dialog-header">
+          <h3 id="dialog-title">Удалить заявку ORD-10432?</h3>
+          <button class="dialog-close" id="dialog-close-btn" aria-label="Закрыть">&times;</button>
+        </div>
+        <div class="dialog-body">
+          Это действие нельзя отменить. Заявка и связанные с ней документы
+          будут удалены безвозвратно.
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-ghost" id="dialog-cancel-btn">Отмена</button>
+          <button class="btn btn-danger">Удалить</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. BADGES -->
+  <section class="section">
+    <h2>6. Бейджи статусов</h2>
+    <p class="section-desc">Pill-стиль для статусов монтажа.</p>
+    <div class="swatch-row">
+      <span class="badge badge-success">Завершена</span>
+      <span class="badge badge-warning">В работе</span>
+      <span class="badge badge-danger">Просрочена</span>
+      <span class="badge badge-info">Новая</span>
+    </div>
+  </section>
+
+  <!-- 7. DROPDOWN -->
+  <section class="section">
+    <h2>7. Dropdown-меню</h2>
+    <p class="section-desc">Контекстное меню действий над заявкой.</p>
+    <div class="dropdown" id="dropdown-root">
+      <button class="btn btn-outline" id="dropdown-trigger">Действия ▾</button>
+      <div class="dropdown-menu">
+        <button class="dropdown-item">Открыть заявку</button>
+        <button class="dropdown-item">Назначить бригаду</button>
+        <button class="dropdown-item">Экспорт в PDF</button>
+        <div class="dropdown-sep"></div>
+        <button class="dropdown-item danger">Удалить заявку</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. TABS -->
+  <section class="section">
+    <h2>8. Вкладки</h2>
+    <p class="section-desc">Переключение между разделами карточки заявки.</p>
+    <div class="tabs" id="tabs-root">
+      <div class="tabs-list">
+        <button class="tab-btn is-active" data-tab="info">Информация</button>
+        <button class="tab-btn" data-tab="files">Документы</button>
+        <button class="tab-btn" data-tab="history">История</button>
+      </div>
+      <div class="tab-panel is-active" data-panel="info">
+        Объект: ТЦ «Галерея». Тип работ: монтаж баннера. Ответственный: Иванов И.И.
+      </div>
+      <div class="tab-panel" data-panel="files">
+        Договор.pdf, Смета.xlsx, Фото_объекта.jpg
+      </div>
+      <div class="tab-panel" data-panel="history">
+        09:40 — бригада выехала на объект.<br>
+        08:15 — заявка назначена бригаде №2.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Dialog
+  var overlay = document.getElementById('dialog-overlay');
+  document.getElementById('dialog-open-btn').addEventListener('click', function(){
+    overlay.classList.add('is-open');
+  });
+  document.getElementById('dialog-close-btn').addEventListener('click', closeDialog);
+  document.getElementById('dialog-cancel-btn').addEventListener('click', closeDialog);
+  overlay.addEventListener('click', function(e){
+    if (e.target === overlay) closeDialog();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeDialog();
+  });
+  function closeDialog(){ overlay.classList.remove('is-open'); }
+
+  // Dropdown
+  var dropdown = document.getElementById('dropdown-root');
+  document.getElementById('dropdown-trigger').addEventListener('click', function(e){
+    e.stopPropagation();
+    dropdown.classList.toggle('is-open');
+  });
+  document.addEventListener('click', function(){
+    dropdown.classList.remove('is-open');
+  });
+
+  // Tabs
+  var tabsRoot = document.getElementById('tabs-root');
+  tabsRoot.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabsRoot.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('is-active'); });
+      tabsRoot.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      tabsRoot.querySelector('[data-panel="' + btn.dataset.tab + '"]').classList.add('is-active');
+    });
+  });
+</script>
+</body>
+</html>

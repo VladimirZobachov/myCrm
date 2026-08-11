@@ -3,19 +3,11 @@
 global $db_engine, $db_conn;
 $db_engine = "mysqli";
 
-$local_names = array("localhost", "127.0.0.1", "parsers");
-if( in_array($_SERVER['SERVER_NAME'], $local_names) ){
-    $db_host = "localhost";
-    $db_user = "root";
-    $db_pass = "";
-    $db_name = "firmaacru_crm";
-}else{
-    $db_host = "localhost";
-    $db_user = "root";
-    $db_pass = "";
-    $db_name = "firmaacru_crm";
-}
-
+// Поддержка Docker (переменные окружения) и локальной разработки
+$db_host = getenv("DB_HOST") ?: "localhost";
+$db_user = getenv("DB_USER") ?: "root";
+$db_pass = getenv("DB_PASS") ?: "";
+$db_name = getenv("DB_NAME") ?: "firmaacru_crm";
 
 if( $db_engine == "mysqli" ){
       $db_conn = mysqli_connect($db_host, $db_user, $db_pass) or die("Could not connect to db");
@@ -28,7 +20,5 @@ if( $db_engine == "mysqli" ){
       mysql_select_db( $db_name) or die("Could not select the database");
       @mysql_query( 'SET NAMES utf8;') or die("Error: could not set names");
       @mysql_query( 'SET CHARACTER SET utf8;') or die("Error: could not set character");
-      @mysql_query( 'SET character_set_connection=utf8;') or die("Error: could not set connection");
-}
 
-?>
+}
