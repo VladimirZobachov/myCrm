@@ -42,9 +42,9 @@ describe('OrderDetails (#35)', () => {
     expect(screen.getByText('Админ')).toBeInTheDocument();
   });
 
-  it('статус «Принят» виден', () => {
+  it('статус «принят» виден', () => {
     render(<OrderDetails order={makeOrder()} />);
-    expect(screen.getByText('Принят')).toBeInTheDocument();
+    expect(screen.getByText('принят')).toBeInTheDocument();
   });
 
   it('фотопривязка рендерит ссылки', () => {

@@ -1,10 +1,66 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, Order, Paginated } from '@/lib/api';
+import { api, Order, Paginated, User } from '@/lib/api';
 import { StatusBadge, formatDate } from '@/components/StatusBadge';
+import { importanceBadge } from '@/lib/constants';
 import OrdersTable from '@/components/OrdersTable';
 import ExportModal from '@/components/ExportModal';
+import ConfirmModal from '@/components/ConfirmModal';
+import RowActions from '@/components/RowActions';
+
+function AccountIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 16l5-4-5-4M15 12H3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function NavTab({ active, href, onClick, children }: { active: boolean; href?: string; onClick?: () => void; children: React.ReactNode }) {
+  const cls = `min-h-[40px] px-1 flex items-center text-sm font-medium border-b-2 transition-colors ${
+    active ? 'text-blue-600 border-blue-600' : 'text-slate-600 border-transparent hover:text-slate-900'
+  }`;
+  if (href) return <a href={href} className={cls}>{children}</a>;
+  return <button onClick={onClick} className={cls}>{children}</button>;
+}
+
+function Pagination({ page, lastPage, onPage }: { page: number; lastPage: number; onPage: (p: number) => void }) {
+  const numbers = Array.from({ length: Math.min(3, lastPage) }, (_, i) => i + 1);
+  return (
+    <div className="flex items-center justify-center gap-2 py-4">
+      {numbers.map((n) => (
+        <button
+          key={n}
+          onClick={() => onPage(n)}
+          className={`min-h-[40px] min-w-[40px] rounded-lg text-sm font-medium transition-colors ${
+            page === n ? 'bg-blue-600 text-white' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+          }`}
+        >
+          {n}
+        </button>
+      ))}
+      {lastPage > 3 && <span className="px-1 text-slate-400">...</span>}
+      <button
+        onClick={() => onPage(Math.min(lastPage, page + 1))}
+        disabled={page === lastPage}
+        className="min-h-[40px] px-4 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white"
+      >
+        Вперед
+      </button>
+    </div>
+  );
+}
 
 export default function OrdersPage() {
   const [data, setData] = useState<Paginated<Order> | null>(null);
@@ -12,24 +68,25 @@ export default function OrdersPage() {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [archived, setArchived] = useState(false);
-  const [status, setStatus] = useState('');
   const [sort, setSort] = useState('date_create|DESC');
   const [role, setRole] = useState<number>(1); // из /auth/me
+  const [me, setMe] = useState<User | null>(null);
   const [showExport, setShowExport] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setError('');
     api
       .me()
-      .then((me) => setRole(me.user.type_user))
+      .then((res) => { setRole(res.user.type_user); setMe(res.user); })
       .catch(() => {});
     api
-      .orders({ page, archived: archived ? 1 : 0, status, sort })
+      .orders({ page, archived: archived ? 1 : 0, sort })
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [page, archived, status, sort]);
+  }, [page, archived, sort]);
 
   function toggleSort(field: string) {
     const [cur, dir] = sort.split('|');
@@ -37,88 +94,63 @@ export default function OrdersPage() {
   }
 
   function reload() {
-    setPage(1);
-    // триггер перезагрузки: меняем страницу туда-обратно
     setLoading(true);
     api
-      .orders({ page: 1, archived: archived ? 1 : 0, status, sort })
+      .orders({ page, archived: archived ? 1 : 0, sort })
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }
 
+  async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+  }
+
   return (
-    <main className="min-h-screen bg-slate-50">
-      {/* Topbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <h1 className="font-bold text-lg text-slate-900">MyCRM — заявки</h1>
+    <main className="min-h-screen bg-slate-100">
+      {/* Топ-панель */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 h-[60px] flex items-center gap-6">
+          <span className="text-2xl font-light text-slate-400 tracking-wide flex-none">CRM</span>
+
+          <nav className="flex items-center gap-6 flex-none">
+            <NavTab active={!archived} onClick={() => { setArchived(false); setPage(1); }}>Заказы</NavTab>
+            <NavTab active={archived} onClick={() => { setArchived(true); setPage(1); }}>Архив</NavTab>
+            <NavTab active={false} href="/users">Пользователи</NavTab>
+          </nav>
+
           <div className="flex items-center gap-2">
             <a
               href="/orders/new"
-              className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg px-3 py-2 min-h-[44px] flex items-center"
+              className="h-9 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium flex items-center gap-1.5"
             >
-              + Добавить
-            </a>
-            <a
-              href="/users"
-              className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2 flex items-center"
-            >
-              Пользователи
-            </a>
-            <a
-              href="/profile"
-              className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2 flex items-center"
-            >
-              Кабинет
+              <span className="text-base leading-none">+</span> Новый заказ
             </a>
             <button
               onClick={() => setShowExport(true)}
-              className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2"
+              className="h-9 px-3.5 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium"
             >
               Экспорт
             </button>
-            <button
-              onClick={async () => {
-                await fetch('/api/auth/logout', { method: 'POST' });
-                window.location.href = '/login';
-              }}
-              className="text-sm text-slate-500 hover:text-slate-700 min-h-[44px] px-2"
-            >
-              Выход
+          </div>
+
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-3 flex-none">
+            <span className="text-sm text-slate-700 hidden sm:inline">{me?.fio || me?.login || ''}</span>
+            <a href="/profile" title="Аккаунт" className="text-slate-500 hover:text-slate-800">
+              <AccountIcon />
+            </a>
+            <button onClick={() => setShowLogoutConfirm(true)} title="Выйти" className="text-slate-500 hover:text-slate-800">
+              <LogoutIcon />
             </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-4 space-y-4">
-        {/* Фильтры */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <button
-            onClick={() => { setArchived(false); setPage(1); }}
-            className={`px-3 py-2 rounded-lg text-sm min-h-[44px] ${!archived ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-300 text-slate-700'}`}
-          >
-            Активные
-          </button>
-          <button
-            onClick={() => { setArchived(true); setPage(1); }}
-            className={`px-3 py-2 rounded-lg text-sm min-h-[44px] ${archived ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-300 text-slate-700'}`}
-          >
-            Архив
-          </button>
-          <select
-            value={status}
-            onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm min-h-[44px] bg-white"
-          >
-            <option value="">Все статусы</option>
-            <option value="1">В ожидании</option>
-            <option value="2">Принят</option>
-            <option value="3">Выполнено</option>
-          </select>
-        </div>
-
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm">{error}</div>}
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{error}</div>}
 
         {loading && <div className="text-center py-10 text-slate-400">Загрузка...</div>}
 
@@ -127,68 +159,84 @@ export default function OrdersPage() {
             {/* Десктоп: таблица (ролевые колонки) */}
             <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} />
 
-            {/* Мобильный: карточки */}
+            {/* Мобильный: карточки (по orders-mobile.png) */}
             <div className="lg:hidden space-y-3">
-              {data.data.map((o) => (
-                <a
-                  key={o.id}
-                  href={`/orders/${o.id}`}
-                  className="block bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-semibold text-slate-900">№{o.id} · {o.trc}</div>
-                      <div className="text-sm text-slate-500">{formatDate(o.date)} · {o.brand}</div>
+              {data.data.length === 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-500 text-sm">
+                  Заявок не найдено
+                </div>
+              )}
+              {data.data.map((o) => {
+                const imp = importanceBadge(o.importance);
+                const rows: [string, React.ReactNode][] = [
+                  ['ТРЦ:', <span key="trc" className="font-semibold text-slate-900">{o.trc}</span>],
+                  ['Бренд:', o.brand],
+                  ['Вид работ:', o.type_work],
+                  ['Менеджер:', o.created_by?.fio || '—'],
+                  ...(role === 1 ? ([['Монтажник:', o.created_for?.fio || '—']] as [string, React.ReactNode][]) : []),
+                  ['Где печать:', o.where_print],
+                  ['Комментарий монтажнику:', o.comments || '—'],
+                ];
+                return (
+                  <div key={o.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+                      <div className="text-xs text-slate-400">
+                        <span className="font-medium text-slate-600">№{o.id}</span> {formatDate(o.date_create)}
+                      </div>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap ${imp.cls}`}>
+                        {imp.label}
+                      </span>
                     </div>
-                    <StatusBadge status={o.status} archived={o.is_archived} />
+
+                    <div className="grid grid-cols-2 gap-2 py-3 border-b border-slate-100">
+                      <div>
+                        <div className="text-xs text-slate-400">Дата монтажа:</div>
+                        <div className="text-slate-900 font-medium">{formatDate(o.date)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400">Стоимость:</div>
+                        <div className="text-slate-900 font-medium tabular-nums">
+                          {o.price}
+                          {role === 1 && <span className="text-xs text-slate-400 font-normal"> адм. {o.price_admin}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <dl className="divide-y divide-slate-100">
+                      {rows.map(([label, value]) => (
+                        <div key={label} className="py-2 text-sm">
+                          <dt className="text-xs text-slate-400">{label}</dt>
+                          <dd className="text-slate-700">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+
+                    <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-100">
+                      <RowActions order={o} role={role} onChanged={reload} />
+                      <StatusBadge status={o.status} archived={o.is_archived} withCaret />
+                    </div>
                   </div>
-                  <p className="text-sm text-slate-600 line-clamp-2">{o.type_work}</p>
-                  {o.photo && o.photo !== '-' && (
-                    <a href={o.photo.split(' ')[0]} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">
-                      📷 Фотопривязка
-                    </a>
-                  )}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">{o.created_for?.fio || 'Монтажник не назначен'}</span>
-                    <span className="font-semibold text-slate-900">{o.price} ₽</span>
-                  </div>
-                  <div className="pt-1 flex items-center justify-between">
-                    <a href={`/orders/${o.id}/edit`} className="text-xs text-indigo-600 hover:underline">
-                      Редактировать
-                    </a>
-                    <span className="text-xs text-slate-400">№{o.id}</span>
-                  </div>
-                </a>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Пагинация */}
+            {/* Пагинация: 1 2 3 ... Вперед */}
             {data.last_page > 1 && (
-              <div className="flex items-center justify-center gap-2 py-4">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm min-h-[44px] disabled:opacity-40"
-                >
-                  ← Назад
-                </button>
-                <span className="text-sm text-slate-500 px-2">
-                  {data.current_page} / {data.last_page} ({data.total} заявок)
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(data.last_page, p + 1))}
-                  disabled={page === data.last_page}
-                  className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm min-h-[44px] disabled:opacity-40"
-                >
-                  Вперёд →
-                </button>
-              </div>
+              <Pagination page={data.current_page} lastPage={data.last_page} onPage={setPage} />
             )}
           </>
         )}
       </div>
 
       {showExport && <ExportModal role={role} onClose={() => setShowExport(false)} />}
+      {showLogoutConfirm && (
+        <ConfirmModal
+          title="Выйти из системы?"
+          confirmLabel="Выйти"
+          onCancel={() => setShowLogoutConfirm(false)}
+          onConfirm={doLogout}
+        />
+      )}
     </main>
   );
 }

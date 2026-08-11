@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { bffLogin, bffMe, bffLogout, parseCookies } from '@/lib/bff';
 
-const BACKEND = 'http://localhost:8000/api';
+const BACKEND = 'http://127.0.0.1:8000/api';
 
 describe('BFF auth (#39)', () => {
   beforeEach(() => {

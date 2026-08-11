@@ -12,9 +12,9 @@ describe('StatusModal (#34)', () => {
     const onClose = vi.fn();
     render(<StatusModal current={1} onClose={onClose} onApply={() => {}} />);
 
-    expect(screen.getByLabelText(/В ожидании/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Принят/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Выполнено/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/ждет/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/принят/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/готов/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Отмена/i }));
     expect(onClose).toHaveBeenCalled();
@@ -22,14 +22,14 @@ describe('StatusModal (#34)', () => {
 
   it('текущий статус отмечен радио', () => {
     render(<StatusModal current={2} onClose={() => {}} onApply={() => {}} />);
-    expect(screen.getByLabelText(/Принят/i)).toBeChecked();
+    expect(screen.getByLabelText(/принят/i)).toBeChecked();
   });
 
   it('onApply вызывается с выбранным статусом', () => {
     const onApply = vi.fn();
     render(<StatusModal current={1} onClose={() => {}} onApply={onApply} />);
 
-    fireEvent.click(screen.getByLabelText(/Выполнено/i));
+    fireEvent.click(screen.getByLabelText(/готов/i));
     fireEvent.click(screen.getByRole('button', { name: /Применить/i }));
 
     expect(onApply).toHaveBeenCalledWith(3);

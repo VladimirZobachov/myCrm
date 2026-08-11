@@ -33,13 +33,23 @@ describe('RowActions', () => {
     vi.restoreAllMocks();
   });
 
-  it('админ видит кнопку Архив', () => {
+  it('кнопка «Действия» (три точки) скрыта до клика — действия открываются в модалке', () => {
     render(<RowActions order={makeOrder()} role={1} onChanged={() => {}} />);
+    expect(screen.queryByText('Сменить статус')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
+    expect(screen.getByText('Сменить статус')).toBeInTheDocument();
+    expect(screen.getByText('Комментарий')).toBeInTheDocument();
+  });
+
+  it('админ видит в модалке действий пункт Архив', () => {
+    render(<RowActions order={makeOrder()} role={1} onChanged={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
     expect(screen.getByText('Архив')).toBeInTheDocument();
   });
 
-  it('монтажник НЕ видит кнопку Архив', () => {
+  it('монтажник НЕ видит пункт Архив', () => {
     render(<RowActions order={makeOrder()} role={3} onChanged={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
     expect(screen.queryByText('Архив')).not.toBeInTheDocument();
   });
 
@@ -53,8 +63,9 @@ describe('RowActions', () => {
     const onChanged = vi.fn();
     render(<RowActions order={makeOrder()} role={3} onChanged={onChanged} />);
 
-    fireEvent.click(screen.getByText('Статус'));
-    fireEvent.click(screen.getByLabelText('Выполнено'));
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
+    fireEvent.click(screen.getByText('Сменить статус'));
+    fireEvent.click(screen.getByLabelText('готов'));
     fireEvent.click(screen.getByRole('button', { name: 'Применить' }));
 
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
@@ -73,7 +84,8 @@ describe('RowActions', () => {
 
     render(<RowActions order={makeOrder()} role={3} onChanged={() => {}} />);
 
-    fireEvent.click(screen.getByText('Комм.'));
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
+    fireEvent.click(screen.getByText('Комментарий'));
     fireEvent.change(screen.getByLabelText('Комментарий *'), { target: { value: 'Принял в работу' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 
@@ -94,6 +106,7 @@ describe('RowActions', () => {
     const onChanged = vi.fn();
     render(<RowActions order={makeOrder()} role={1} onChanged={onChanged} />);
 
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
     fireEvent.click(screen.getByText('Архив'));
 
     await waitFor(() => expect(onChanged).toHaveBeenCalled());

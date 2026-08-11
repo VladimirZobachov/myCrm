@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import UsersTable from '@/components/UsersTable';
 import UserFormModal from '@/components/UserFormModal';
+import ConfirmModal from '@/components/ConfirmModal';
 import { api, User } from '@/lib/api';
 
 export default function UsersPage() {
@@ -13,6 +14,7 @@ export default function UsersPage() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   function load() {
     setLoading(true);
@@ -39,12 +41,13 @@ export default function UsersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleDelete(id: number) {
-    if (!window.confirm('Удалить пользователя?')) return;
+  async function doDelete(id: number) {
     try {
       await api.delete(`/users/${id}`);
+      setDeleteId(null);
       load();
     } catch (e) {
+      setDeleteId(null);
       setError(e instanceof Error ? e.message : 'Ошибка удаления');
     }
   }
@@ -83,7 +86,7 @@ export default function UsersPage() {
               const u = users.find((x) => x.id === id);
               if (u) { setEditing(u); setShowForm(true); }
             }}
-            onDelete={handleDelete}
+            onDelete={setDeleteId}
           />
         )}
       </div>
@@ -93,6 +96,16 @@ export default function UsersPage() {
           user={editing}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); load(); }}
+        />
+      )}
+
+      {deleteId !== null && (
+        <ConfirmModal
+          title="Удалить пользователя?"
+          message="Внимание! После удаления человека не станет в системе!"
+          confirmLabel="Удалить"
+          onCancel={() => setDeleteId(null)}
+          onConfirm={() => doDelete(deleteId)}
         />
       )}
     </main>

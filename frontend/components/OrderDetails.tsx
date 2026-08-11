@@ -56,7 +56,7 @@ export default function OrderDetails({ order }: { order: Order }) {
                 href={p}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-indigo-600 hover:underline break-all"
+                className="text-xs text-blue-600 hover:underline break-all"
               >
                 {p.slice(0, 50)}...
               </a>

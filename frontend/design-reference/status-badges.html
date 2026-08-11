@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>myCRM — Статус-бейджи (Итерация 1)</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS — 1:1 маппинг из docker/design/tokens.json
+     (те же имена переменных, что и в ui-kit.html / prototype-orders.html)
+     ============================================================ */
+  :root{
+    --c-primary-500:#6366f1; --c-primary-600:#4f46e5;
+
+    --c-surface:#ffffff; --c-surface-alt:#f8fafc; --c-surface-sunken:#f1f5f9;
+    --c-ink:#0f172a; --c-ink-2:#334155; --c-muted:#64748b; --c-muted-2:#94a3b8;
+    --c-border:#e2e8f0; --c-border-strong:#cbd5e1;
+
+    --c-success:#16a34a; --c-success-bg:#f0fdf4; --c-success-border:#bbf7d0;
+    --c-warning:#d97706; --c-warning-bg:#fffbeb; --c-warning-border:#fde68a;
+    --c-danger:#dc2626;  --c-danger-bg:#fef2f2;  --c-danger-border:#fecaca;
+    --c-info:#0284c7;    --c-info-bg:#f0f9ff;    --c-info-border:#bae6fd;
+    /* Архив — нейтральный/серый статус, отдельного семантического цвета в tokens.json нет,
+       поэтому берём его из существующей нейтральной гаммы (surface-sunken/border-strong/muted). */
+    --c-neutral:#64748b;  --c-neutral-bg:#f1f5f9;  --c-neutral-border:#cbd5e1;
+
+    --font-base: Inter, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+    --fs-xs:12px;   --lh-xs:16px;
+    --fs-sm:13px;   --lh-sm:18px;
+    --fs-base:14px; --lh-base:20px;
+    --fs-md:16px;   --lh-md:24px;
+    --fs-h4:18px;   --lh-h4:24px;
+    --fs-h3:20px;   --lh-h3:28px;
+    --fs-h2:24px;   --lh-h2:32px;
+    --fs-h1:30px;   --lh-h1:38px;
+
+    --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700;
+
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-12:48px;
+
+    --r-sm:4px; --r-md:8px; --r-lg:12px; --r-full:9999px;
+
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+    --shadow-md:0 4px 8px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.06);
+
+    --dur-fast:100ms; --ease-standard:cubic-bezier(.4,0,.2,1);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:var(--font-base);
+    font-size:var(--fs-base);
+    line-height:var(--lh-base);
+    color:var(--c-ink);
+    background:var(--c-surface-alt);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- layout ---------- */
+  .page{
+    max-width:960px;
+    margin:0 auto;
+    padding:var(--sp-8) var(--sp-6) var(--sp-12);
+  }
+  .page-header{ margin-bottom:var(--sp-8); }
+  .page-header .eyebrow{
+    display:inline-block;
+    font-size:var(--fs-xs);
+    font-weight:var(--fw-semibold);
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--c-primary-600);
+    background:#eef2ff;
+    border-radius:var(--r-sm);
+    padding:2px 8px;
+    margin-bottom:var(--sp-3);
+  }
+  .page-header h1{
+    margin:0 0 var(--sp-2);
+    font-size:var(--fs-h1);
+    line-height:var(--lh-h1);
+    font-weight:var(--fw-bold);
+  }
+  .page-header p{
+    margin:0;
+    color:var(--c-muted);
+    font-size:var(--fs-md);
+    line-height:var(--lh-md);
+    max-width:640px;
+  }
+  .section{
+    background:var(--c-surface);
+    border:1px solid var(--c-border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-sm);
+    padding:var(--sp-6);
+    margin-bottom:var(--sp-6);
+  }
+  .section h2{
+    font-size:var(--fs-h3);
+    line-height:var(--lh-h3);
+    font-weight:var(--fw-semibold);
+    margin:0 0 var(--sp-1);
+  }
+  .section .section-desc{
+    margin:0 0 var(--sp-4);
+    color:var(--c-muted);
+    font-size:var(--fs-sm);
+    line-height:var(--lh-sm);
+  }
+  .row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:var(--sp-3);
+  }
+  code{
+    font-family:var(--font-mono);
+    font-size:var(--fs-xs);
+    background:var(--c-surface-sunken);
+    border:1px solid var(--c-border);
+    border-radius:var(--r-sm);
+    padding:1px 6px;
+  }
+
+  /* ============================================================
+     BADGES — pill, точка-индикатор, 3 варианта: default / subtle / outline
+     ============================================================ */
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:var(--fs-xs);
+    font-weight:var(--fw-medium);
+    line-height:1;
+    padding:6px 10px;
+    border-radius:var(--r-full);
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+  .badge::before{
+    content:"";
+    width:6px; height:6px;
+    border-radius:50%;
+    background:currentColor;
+    flex:none;
+  }
+
+  /* --- вариант: subtle (заливка + рамка в тон) --- */
+  .badge--subtle.badge-success{ background:var(--c-success-bg); border-color:var(--c-success-border); color:var(--c-success); }
+  .badge--subtle.badge-warning{ background:var(--c-warning-bg); border-color:var(--c-warning-border); color:var(--c-warning); }
+  .badge--subtle.badge-info{    background:var(--c-info-bg);    border-color:var(--c-info-border);    color:var(--c-info); }
+  .badge--subtle.badge-neutral{ background:var(--c-neutral-bg); border-color:var(--c-neutral-border); color:var(--c-neutral); }
+
+  /* --- вариант: default (плашка, залитая насыщенным цветом, текст белый) --- */
+  .badge--default{ color:#fff; border-color:transparent; }
+  .badge--default.badge-success{ background:var(--c-success); }
+  .badge--default.badge-warning{ background:var(--c-warning); }
+  .badge--default.badge-info{    background:var(--c-info); }
+  .badge--default.badge-neutral{ background:var(--c-neutral); }
+  .badge--default::before{ background:#fff; opacity:.85; }
+
+  /* --- вариант: outline (без заливки, только рамка + текст в цвете) --- */
+  .badge--outline{ background:transparent; }
+  .badge--outline.badge-success{ border-color:var(--c-success-border); color:var(--c-success); }
+  .badge--outline.badge-warning{ border-color:var(--c-warning-border); color:var(--c-warning); }
+  .badge--outline.badge-info{    border-color:var(--c-info-border);    color:var(--c-info); }
+  .badge--outline.badge-neutral{ border-color:var(--c-neutral-border); color:var(--c-neutral); }
+
+  /* ---------- variant showcase grid ---------- */
+  .variant-block{ margin-bottom:var(--sp-6); }
+  .variant-block:last-child{ margin-bottom:0; }
+  .variant-block h3{
+    font-size:var(--fs-sm);
+    font-weight:var(--fw-semibold);
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--c-muted);
+    margin:0 0 var(--sp-3);
+  }
+
+  /* ---------- legend table ---------- */
+  table.legend{
+    width:100%;
+    border-collapse:collapse;
+    font-size:var(--fs-sm);
+  }
+  table.legend th, table.legend td{
+    text-align:left;
+    padding:var(--sp-3) var(--sp-3);
+    border-bottom:1px solid var(--c-border);
+    vertical-align:middle;
+  }
+  table.legend th{
+    color:var(--c-muted);
+    font-weight:var(--fw-medium);
+    font-size:var(--fs-xs);
+    text-transform:uppercase;
+    letter-spacing:.03em;
+  }
+  table.legend tr:last-child td{ border-bottom:none; }
+  table.legend td.mono{ font-family:var(--font-mono); font-size:var(--fs-xs); color:var(--c-muted); }
+  .swatch{
+    display:inline-block;
+    width:14px; height:14px;
+    border-radius:4px;
+    border:1px solid rgba(0,0,0,.06);
+    vertical-align:middle;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <span class="eyebrow">Итерация 1 · UI-кит</span>
+      <h1>Статус-бейджи и индикаторы</h1>
+      <p>Демонстрация pill-бейджей для статусов заявок в myCRM (ERP монтажных работ). Три визуальных варианта одного и того же набора статусов — default, subtle, outline — плюс легенда соответствия статус → цвет.</p>
+    </header>
+
+    <!-- 1. DEFAULT -->
+    <section class="section">
+      <div class="variant-block">
+        <h3>Вариант «default» — заливка насыщенным цветом</h3>
+        <div class="row">
+          <span class="badge badge--default badge-warning">В ожидании</span>
+          <span class="badge badge--default badge-info">Принят</span>
+          <span class="badge badge--default badge-success">Выполнено</span>
+          <span class="badge badge--default badge-neutral">Архив</span>
+        </div>
+      </div>
+
+      <!-- 2. SUBTLE -->
+      <div class="variant-block">
+        <h3>Вариант «subtle» — заливка + рамка в тон (по умолчанию в таблицах/карточках заявок)</h3>
+        <div class="row">
+          <span class="badge badge--subtle badge-warning">В ожидании</span>
+          <span class="badge badge--subtle badge-info">Принят</span>
+          <span class="badge badge--subtle badge-success">Выполнено</span>
+          <span class="badge badge--subtle badge-neutral">Архив</span>
+        </div>
+      </div>
+
+      <!-- 3. OUTLINE -->
+      <div class="variant-block">
+        <h3>Вариант «outline» — только рамка, без заливки</h3>
+        <div class="row">
+          <span class="badge badge--outline badge-warning">В ожидании</span>
+          <span class="badge badge--outline badge-info">Принят</span>
+          <span class="badge badge--outline badge-success">Выполнено</span>
+          <span class="badge badge--outline badge-neutral">Архив</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEGEND -->
+    <section class="section">
+      <h2>Легенда статусов</h2>
+      <p class="section-desc">Соответствие статуса заявки семантическому цвету и токену. Статусы 1–3 приходят из поля заявки, «Архив» — отдельный флаг для скрытых/архивных заявок.</p>
+      <table class="legend">
+        <thead>
+          <tr>
+            <th>Код</th>
+            <th>Статус</th>
+            <th>Цвет</th>
+            <th>Пример</th>
+            <th>Токен</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">1</td>
+            <td>В ожидании</td>
+            <td><span class="swatch" style="background:var(--c-warning)"></span> Жёлтый (warning)</td>
+            <td><span class="badge badge--subtle badge-warning">В ожидании</span></td>
+            <td class="mono">--c-warning</td>
+          </tr>
+          <tr>
+            <td class="mono">2</td>
+            <td>Принят</td>
+            <td><span class="swatch" style="background:var(--c-info)"></span> Голубой (info)</td>
+            <td><span class="badge badge--subtle badge-info">Принят</span></td>
+            <td class="mono">--c-info</td>
+          </tr>
+          <tr>
+            <td class="mono">3</td>
+            <td>Выполнено</td>
+            <td><span class="swatch" style="background:var(--c-success)"></span> Зелёный (success)</td>
+            <td><span class="badge badge--subtle badge-success">Выполнено</span></td>
+            <td class="mono">--c-success</td>
+          </tr>
+          <tr>
+            <td class="mono">—</td>
+            <td>Архив</td>
+            <td><span class="swatch" style="background:var(--c-neutral)"></span> Серый (neutral)</td>
+            <td><span class="badge badge--subtle badge-neutral">Архив</span></td>
+            <td class="mono">--c-neutral</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </div>
+</body>
+</html>

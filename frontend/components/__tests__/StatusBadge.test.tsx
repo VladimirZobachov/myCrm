@@ -3,19 +3,19 @@ import { render, screen } from '@testing-library/react';
 import { StatusBadge, formatDate } from '@/components/StatusBadge';
 
 describe('StatusBadge', () => {
-  it('показывает «В ожидании» для статуса 1', () => {
+  it('показывает «ждет» для статуса 1', () => {
     render(<StatusBadge status={1} />);
-    expect(screen.getByText('В ожидании')).toBeInTheDocument();
+    expect(screen.getByText('ждет')).toBeInTheDocument();
   });
 
-  it('показывает «Принят» для статуса 2', () => {
+  it('показывает «принят» для статуса 2', () => {
     render(<StatusBadge status={2} />);
-    expect(screen.getByText('Принят')).toBeInTheDocument();
+    expect(screen.getByText('принят')).toBeInTheDocument();
   });
 
-  it('показывает «Выполнено» для статуса 3', () => {
+  it('показывает «готов» для статуса 3', () => {
     render(<StatusBadge status={3} />);
-    expect(screen.getByText('Выполнено')).toBeInTheDocument();
+    expect(screen.getByText('готов')).toBeInTheDocument();
   });
 
   it('показывает «Архив» при archived=1', () => {
@@ -26,7 +26,7 @@ describe('StatusBadge', () => {
   it('Архив перекрывает статус', () => {
     render(<StatusBadge status={3} archived={1} />);
     expect(screen.getByText('Архив')).toBeInTheDocument();
-    expect(screen.queryByText('Выполнено')).not.toBeInTheDocument();
+    expect(screen.queryByText('готов')).not.toBeInTheDocument();
   });
 
   it('неизвестный статус — «Статус N»', () => {

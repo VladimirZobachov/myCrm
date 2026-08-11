@@ -32,7 +32,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
           <div className="flex items-center gap-2">
             <a
               href={`/orders/${id}/edit`}
-              className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg px-3 py-2 min-h-[44px] flex items-center"
+              className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-3 py-2 min-h-[44px] flex items-center"
             >
               Редактировать
             </a>

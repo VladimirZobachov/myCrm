@@ -20,6 +20,10 @@ backend/tests/coverage/
 .vscode/
 *.swp
 
+# Figma-скриншоты (артефакты, не в репо)
+frontend/design-reference/figma/*.png
+frontend/design-reference/figma/*.jpg
+
 # OS
 .DS_Store
 Thumbs.db

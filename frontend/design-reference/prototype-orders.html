@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>myCRM — Список заявок (прототип)</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS — 1:1 маппинг из docker/design/tokens.json
+     ============================================================ */
+  :root{
+    --c-primary-50:#eef2ff;  --c-primary-100:#e0e7ff; --c-primary-200:#c7d2fe;
+    --c-primary-300:#a5b4fc; --c-primary-400:#818cf8; --c-primary-500:#6366f1;
+    --c-primary-600:#4f46e5; --c-primary-700:#4338ca; --c-primary-800:#3730a3; --c-primary-900:#312e81;
+
+    --c-surface:#ffffff; --c-surface-alt:#f8fafc; --c-surface-sunken:#f1f5f9;
+    --c-ink:#0f172a; --c-ink-2:#334155; --c-muted:#64748b; --c-muted-2:#94a3b8;
+    --c-border:#e2e8f0; --c-border-strong:#cbd5e1;
+
+    --c-success:#16a34a; --c-success-bg:#f0fdf4; --c-success-border:#bbf7d0;
+    --c-warning:#d97706; --c-warning-bg:#fffbeb; --c-warning-border:#fde68a;
+    --c-danger:#dc2626;  --c-danger-bg:#fef2f2;  --c-danger-border:#fecaca;
+    --c-info:#0284c7;    --c-info-bg:#f0f9ff;    --c-info-border:#bae6fd;
+
+    --font-base: Inter, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+    --fs-xs:12px;   --lh-xs:16px;
+    --fs-sm:13px;   --lh-sm:18px;
+    --fs-base:14px; --lh-base:20px;
+    --fs-md:16px;   --lh-md:24px;
+    --fs-h4:18px;   --lh-h4:24px;
+    --fs-h3:20px;   --lh-h3:28px;
+    --fs-h2:24px;   --lh-h2:32px;
+    --fs-h1:30px;   --lh-h1:38px;
+
+    --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700;
+
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-12:48px;
+
+    --r-sm:4px; --r-md:8px; --r-lg:12px; --r-full:9999px;
+
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+    --shadow-md:0 4px 8px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.06);
+    --shadow-lg:0 12px 24px rgba(15,23,42,.12), 0 4px 8px rgba(15,23,42,.06);
+
+    --dur-fast:100ms; --dur-normal:180ms; --dur-slow:280ms;
+    --ease-standard:cubic-bezier(.4,0,.2,1);
+
+    --sidebar-w:240px;
+    --topbar-h:60px;
+    --bottomnav-h:64px;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:var(--font-base);
+    font-size:var(--fs-base);
+    line-height:var(--lh-base);
+    color:var(--c-ink);
+    background:var(--c-surface-sunken);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4,p{ margin:0; }
+  button{ font-family:inherit; }
+  a{ color:inherit; text-decoration:none; }
+  svg{ display:block; }
+  ::selection{ background:var(--c-primary-200); }
+  :focus-visible{ outline:2px solid var(--c-primary-600); outline-offset:2px; }
+
+  /* ============================================================
+     APP SHELL
+     ============================================================ */
+  .app-shell{
+    container-type:inline-size;
+    container-name:shell;
+    display:grid;
+    grid-template-columns:var(--sidebar-w) 1fr;
+    grid-template-rows:1fr;
+    min-height:100vh;
+    background:var(--c-surface-sunken);
+    transition:max-width var(--dur-normal) var(--ease-standard);
+  }
+  .app-shell.preview-mobile{
+    max-width:390px;
+    margin:var(--sp-6) auto;
+    min-height:844px;
+    max-height:844px;
+    border:10px solid var(--c-ink);
+    border-radius:36px;
+    overflow:auto;
+    box-shadow:var(--shadow-lg);
+  }
+
+  /* ---------- Sidebar (desktop) ---------- */
+  .sidebar{
+    grid-row:1 / -1;
+    background:var(--c-surface);
+    border-right:1px solid var(--c-border);
+    display:flex;
+    flex-direction:column;
+    padding:var(--sp-4) var(--sp-3);
+    gap:var(--sp-6);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:var(--sp-2);
+    padding:var(--sp-2);
+  }
+  .brand-mark{
+    width:32px; height:32px; border-radius:var(--r-md);
+    background:var(--c-primary-600); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:var(--fw-bold); font-size:var(--fs-md);
+    flex:none;
+  }
+  .brand-name{ font-weight:var(--fw-semibold); font-size:var(--fs-h4); }
+  .brand-sub{ font-size:var(--fs-xs); color:var(--c-muted); }
+
+  .nav-group-label{
+    font-size:var(--fs-xs); font-weight:var(--fw-semibold);
+    color:var(--c-muted-2); text-transform:uppercase; letter-spacing:.04em;
+    padding:0 var(--sp-2); margin-bottom:var(--sp-1);
+  }
+  .nav-list{ display:flex; flex-direction:column; gap:2px; }
+  .nav-link{
+    display:flex; align-items:center; gap:var(--sp-3);
+    padding:var(--sp-2) var(--sp-3);
+    border-radius:var(--r-md);
+    color:var(--c-ink-2);
+    font-size:var(--fs-base); font-weight:var(--fw-medium);
+    min-height:40px;
+    transition:background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
+  }
+  .nav-link svg{ width:18px; height:18px; flex:none; }
+  .nav-link:hover{ background:var(--c-surface-alt); color:var(--c-ink); }
+  .nav-link.active{ background:var(--c-primary-50); color:var(--c-primary-700); font-weight:var(--fw-semibold); }
+  .nav-link[data-role]{ display:none; }
+  body[data-role="admin"] .nav-link[data-role~="admin"]{ display:flex; }
+  body[data-role="manager"] .nav-link[data-role~="manager"]{ display:flex; }
+  body[data-role="mounter"] .nav-link[data-role~="mounter"]{ display:flex; }
+
+  .sidebar-footer{ margin-top:auto; }
+  .user-chip{
+    display:flex; align-items:center; gap:var(--sp-2);
+    padding:var(--sp-2); border-radius:var(--r-md);
+    border:1px solid var(--c-border);
+  }
+  .avatar{
+    width:32px; height:32px; border-radius:var(--r-full);
+    background:var(--c-primary-100); color:var(--c-primary-700);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:var(--fw-semibold); font-size:var(--fs-sm); flex:none;
+  }
+  .user-chip-name{ font-size:var(--fs-sm); font-weight:var(--fw-medium); line-height:1.2; }
+  .user-chip-role{ font-size:var(--fs-xs); color:var(--c-muted); }
+
+  /* ---------- Main column ---------- */
+  .main{ display:flex; flex-direction:column; min-width:0; }
+
+  .topbar{
+    height:var(--topbar-h);
+    background:var(--c-surface);
+    border-bottom:1px solid var(--c-border);
+    display:flex; align-items:center; gap:var(--sp-3);
+    padding:0 var(--sp-4);
+    position:sticky; top:0; z-index:20;
+  }
+  .topbar-search{
+    display:flex; align-items:center; gap:var(--sp-2);
+    background:var(--c-surface-alt); border:1px solid var(--c-border);
+    border-radius:var(--r-md); padding:0 var(--sp-3);
+    height:36px; width:280px; color:var(--c-muted);
+  }
+  .topbar-search input{
+    border:0; background:transparent; outline:0; font-size:var(--fs-base);
+    color:var(--c-ink); width:100%; height:100%; font-family:inherit;
+  }
+  .topbar-search svg{ width:16px; height:16px; flex:none; }
+  .topbar-spacer{ flex:1; }
+  .icon-btn{
+    width:36px; height:36px; border-radius:var(--r-md);
+    border:1px solid transparent; background:transparent;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--c-ink-2); cursor:pointer; position:relative;
+  }
+  .icon-btn svg{ width:18px; height:18px; }
+  .icon-btn:hover{ background:var(--c-surface-alt); border-color:var(--c-border); }
+  .topbar-user{ display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-1) var(--sp-2); border-radius:var(--r-md); cursor:pointer; }
+  .topbar-user:hover{ background:var(--c-surface-alt); }
+  .mobile-menu-btn{ display:none; }
+
+  .content{ flex:1; padding:var(--sp-6); display:flex; flex-direction:column; gap:var(--sp-4); min-width:0; padding-bottom:calc(var(--sp-6) + var(--bottomnav-h)); }
+
+  .page-header{
+    display:flex; align-items:center; justify-content:space-between; gap:var(--sp-4); flex-wrap:wrap;
+  }
+  .page-header h1{ font-size:var(--fs-h2); line-height:var(--lh-h2); font-weight:var(--fw-bold); }
+  .page-header p{ font-size:var(--fs-sm); color:var(--c-muted); margin-top:2px; }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:var(--sp-2);
+    height:40px; padding:0 var(--sp-4);
+    border-radius:var(--r-md); border:1px solid var(--c-border);
+    background:var(--c-surface); color:var(--c-ink);
+    font-size:var(--fs-base); font-weight:var(--fw-medium); cursor:pointer;
+    transition:background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+    white-space:nowrap;
+  }
+  .btn svg{ width:16px; height:16px; }
+  .btn:hover{ background:var(--c-surface-alt); }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:var(--c-primary-600); border-color:var(--c-primary-600); color:#fff; }
+  .btn-primary:hover{ background:var(--c-primary-700); border-color:var(--c-primary-700); }
+
+  /* ---------- Filters bar ---------- */
+  .filters-bar{
+    background:var(--c-surface); border:1px solid var(--c-border); border-radius:var(--r-lg);
+    padding:var(--sp-3) var(--sp-4);
+    display:flex; align-items:center; gap:var(--sp-3); flex-wrap:wrap;
+    box-shadow:var(--shadow-sm);
+  }
+  .pill-group{ display:flex; gap:var(--sp-1); background:var(--c-surface-alt); padding:3px; border-radius:var(--r-full); }
+  .pill{
+    height:32px; padding:0 var(--sp-3); border-radius:var(--r-full); border:0;
+    background:transparent; color:var(--c-ink-2); font-size:var(--fs-sm); font-weight:var(--fw-medium);
+    cursor:pointer; display:flex; align-items:center; gap:6px;
+    transition:background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
+  }
+  .pill .count{ font-size:var(--fs-xs); color:var(--c-muted-2); }
+  .pill[aria-pressed="true"]{ background:var(--c-surface); color:var(--c-ink); box-shadow:var(--shadow-sm); }
+  .pill[aria-pressed="true"] .count{ color:inherit; }
+  .pill:hover{ color:var(--c-ink); }
+
+  .select-field{
+    height:36px; padding:0 var(--sp-3); border-radius:var(--r-md); border:1px solid var(--c-border);
+    background:var(--c-surface); font-size:var(--fs-sm); color:var(--c-ink-2); cursor:pointer;
+  }
+  .filters-spacer{ flex:1; }
+  .filters-bar .btn{ height:36px; }
+
+  /* ---------- Filters toggle (mobile badge button) ---------- */
+  .filters-toggle{ display:none; position:relative; }
+  .filters-toggle .filters-count{
+    min-width:18px; height:18px; padding:0 4px; border-radius:var(--r-full);
+    background:var(--c-primary-600); color:#fff; font-size:10px; font-weight:var(--fw-semibold);
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- Table ---------- */
+  .table-card{
+    background:var(--c-surface); border:1px solid var(--c-border); border-radius:var(--r-lg);
+    overflow:hidden; box-shadow:var(--shadow-sm);
+  }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; font-size:var(--fs-xs); font-weight:var(--fw-semibold);
+    color:var(--c-muted); text-transform:uppercase; letter-spacing:.03em;
+    padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--c-border);
+    background:var(--c-surface-alt); white-space:nowrap;
+  }
+  tbody td{
+    padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--c-border);
+    font-size:var(--fs-base); vertical-align:middle;
+  }
+  tbody tr:last-child td{ border-bottom:0; }
+  tbody tr{ transition:background var(--dur-fast) var(--ease-standard); }
+  tbody tr:hover{ background:var(--c-surface-alt); }
+  tbody tr.is-urgent{ box-shadow:inset 3px 0 0 var(--c-warning); }
+
+  .cell-id{ font-family:var(--font-mono); color:var(--c-muted); font-size:var(--fs-sm); }
+  .cell-trc{ font-weight:var(--fw-semibold); }
+  .cell-sub{ font-size:var(--fs-xs); color:var(--c-muted); margin-top:2px; }
+  .cell-price{ font-weight:var(--fw-semibold); font-variant-numeric:tabular-nums; }
+  .resp-text{ display:none; font-size:var(--fs-sm); }
+  .resp-text b{ color:var(--c-muted); font-weight:var(--fw-regular); }
+  body[data-role="admin"] .resp-text[data-role~="admin"]{ display:block; }
+  body[data-role="manager"] .resp-text[data-role~="manager"]{ display:block; }
+  body[data-role="mounter"] .resp-text[data-role~="mounter"]{ display:block; }
+
+  /* ---------- Badges ---------- */
+  .badge{
+    display:inline-flex; align-items:center; gap:5px;
+    height:24px; padding:0 var(--sp-2); border-radius:var(--r-full);
+    font-size:var(--fs-xs); font-weight:var(--fw-semibold);
+    border:1px solid transparent; white-space:nowrap;
+  }
+  .badge::before{ content:""; width:6px; height:6px; border-radius:var(--r-full); background:currentColor; }
+  .badge-warning{ background:var(--c-warning-bg); color:var(--c-warning); border-color:var(--c-warning-border); }
+  .badge-info{ background:var(--c-info-bg); color:var(--c-info); border-color:var(--c-info-border); }
+  .badge-success{ background:var(--c-success-bg); color:var(--c-success); border-color:var(--c-success-border); }
+
+  /* ---------- Row actions (desktop) ---------- */
+  .row-actions{ display:flex; align-items:center; gap:var(--sp-1); justify-content:flex-end; }
+  .act-btn{
+    width:36px; height:36px; min-width:36px; border-radius:var(--r-md);
+    border:1px solid var(--c-border); background:var(--c-surface);
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    color:var(--c-ink-2); position:relative;
+    transition:background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+  }
+  .act-btn svg{ width:16px; height:16px; }
+  .act-btn:hover{ background:var(--c-primary-50); color:var(--c-primary-700); border-color:var(--c-primary-200); }
+  .act-btn.danger:hover{ background:var(--c-danger-bg); color:var(--c-danger); border-color:var(--c-danger-border); }
+  .act-btn[data-role]{ display:none; }
+  body[data-role="admin"] .act-btn[data-role~="admin"]{ display:inline-flex; }
+  body[data-role="manager"] .act-btn[data-role~="manager"]{ display:inline-flex; }
+  body[data-role="mounter"] .act-btn[data-role~="mounter"]{ display:inline-flex; }
+
+  /* tooltip on icon buttons */
+  [data-tip]{ position:relative; }
+  [data-tip]::after{
+    content:attr(data-tip);
+    position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%) translateY(2px);
+    background:var(--c-ink); color:#fff; font-size:var(--fs-xs); font-weight:var(--fw-medium);
+    padding:4px 8px; border-radius:var(--r-sm); white-space:nowrap;
+    opacity:0; pointer-events:none; transition:opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+    z-index:30;
+  }
+  [data-tip]:hover::after, [data-tip]:focus-visible::after{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- Empty state ---------- */
+  .empty-state{ display:none; flex-direction:column; align-items:center; justify-content:center; gap:var(--sp-2); padding:var(--sp-12) var(--sp-4); text-align:center; color:var(--c-muted); }
+  .empty-state svg{ width:40px; height:40px; color:var(--c-muted-2); }
+  .empty-state.is-visible{ display:flex; }
+  .table-card.is-empty table, .cards-list.is-empty{ display:none; }
+
+  /* ---------- Cards (mobile) ---------- */
+  .cards-list{ display:none; flex-direction:column; gap:var(--sp-3); }
+  .order-card{
+    background:var(--c-surface); border:1px solid var(--c-border); border-radius:var(--r-lg);
+    padding:var(--sp-4); box-shadow:var(--shadow-sm); position:relative;
+  }
+  .order-card.is-urgent{ box-shadow:var(--shadow-sm), inset 3px 0 0 var(--c-warning); }
+  .order-card-top{ display:flex; align-items:center; justify-content:space-between; gap:var(--sp-2); margin-bottom:var(--sp-2); }
+  .order-card-id{ font-family:var(--font-mono); color:var(--c-muted); font-size:var(--fs-sm); }
+  .order-card-trc{ font-size:var(--fs-md); font-weight:var(--fw-semibold); margin-bottom:2px; }
+  .order-card-work{ font-size:var(--fs-sm); color:var(--c-ink-2); margin-bottom:var(--sp-3); }
+  .order-card-meta{ display:flex; flex-direction:column; gap:2px; font-size:var(--fs-sm); color:var(--c-muted); margin-bottom:var(--sp-3); }
+  .order-card-meta b{ color:var(--c-ink-2); font-weight:var(--fw-medium); }
+  .order-card-footer{ display:flex; align-items:center; justify-content:space-between; padding-top:var(--sp-3); border-top:1px solid var(--c-border); }
+  .order-card-price{ font-size:var(--fs-md); font-weight:var(--fw-semibold); font-variant-numeric:tabular-nums; }
+  .more-btn{
+    width:44px; height:44px; border-radius:var(--r-md); border:1px solid var(--c-border);
+    background:var(--c-surface-alt); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--c-ink-2);
+  }
+  .more-btn svg{ width:18px; height:18px; }
+
+  /* ---------- Bottom sheet (mobile actions) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:90;
+    opacity:0; pointer-events:none; transition:opacity var(--dur-normal) var(--ease-standard);
+  }
+  .sheet-backdrop.is-open{ opacity:1; pointer-events:auto; }
+  .bottom-sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:91;
+    background:var(--c-surface); border-radius:var(--r-lg) var(--r-lg) 0 0;
+    box-shadow:var(--shadow-lg); padding:var(--sp-4);
+    transform:translateY(100%); transition:transform var(--dur-normal) var(--ease-standard);
+    max-width:390px; margin:0 auto;
+  }
+  .bottom-sheet.is-open{ transform:translateY(0); }
+  .sheet-handle{ width:36px; height:4px; border-radius:var(--r-full); background:var(--c-border-strong); margin:0 auto var(--sp-4); }
+  .sheet-title{ font-size:var(--fs-h4); font-weight:var(--fw-semibold); margin-bottom:2px; }
+  .sheet-sub{ font-size:var(--fs-sm); color:var(--c-muted); margin-bottom:var(--sp-4); }
+  .sheet-action{
+    display:flex; align-items:center; gap:var(--sp-3); width:100%;
+    min-height:48px; padding:var(--sp-2) var(--sp-2); border:0; background:transparent;
+    border-radius:var(--r-md); font-size:var(--fs-md); color:var(--c-ink); cursor:pointer; text-align:left;
+  }
+  .sheet-action:hover{ background:var(--c-surface-alt); }
+  .sheet-action svg{ width:20px; height:20px; color:var(--c-ink-2); flex:none; }
+  .sheet-action.danger{ color:var(--c-danger); }
+  .sheet-action.danger svg{ color:var(--c-danger); }
+  .sheet-action[data-role]{ display:none; }
+  body[data-role="admin"] .sheet-action[data-role~="admin"]{ display:flex; }
+  body[data-role="manager"] .sheet-action[data-role~="manager"]{ display:flex; }
+  body[data-role="mounter"] .sheet-action[data-role~="mounter"]{ display:flex; }
+  .sheet-cancel{ margin-top:var(--sp-2); width:100%; height:48px; border-radius:var(--r-md); border:1px solid var(--c-border); background:var(--c-surface); font-weight:var(--fw-medium); }
+
+  /* ---------- Bottom nav (mobile) ---------- */
+  .bottom-nav{
+    display:none;
+    position:sticky; bottom:0; left:0; right:0;
+    height:var(--bottomnav-h);
+    background:var(--c-surface); border-top:1px solid var(--c-border);
+    align-items:center; justify-content:space-around;
+    z-index:20;
+  }
+  .bn-link{ display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--c-muted); font-size:11px; min-width:44px; min-height:44px; justify-content:center; }
+  .bn-link svg{ width:20px; height:20px; }
+  .bn-link.active{ color:var(--c-primary-600); }
+  .bn-fab{
+    width:48px; height:48px; border-radius:var(--r-full); background:var(--c-primary-600); color:#fff;
+    display:flex; align-items:center; justify-content:center; margin-top:-24px; box-shadow:var(--shadow-md);
+    border:4px solid var(--c-surface);
+  }
+  .bn-fab svg{ width:22px; height:22px; }
+
+  /* ============================================================
+     RESPONSIVE — container query (реагирует на кнопку превью)
+     + media query fallback (реагирует на реальное окно браузера)
+     ============================================================ */
+  @container shell (max-width: 768px){
+    .sidebar{ display:none; }
+    .app-shell{ grid-template-columns:1fr; }
+    .topbar-search{ display:none; }
+    .table-card{ display:none; }
+    .cards-list{ display:flex; }
+    .bottom-nav{ display:flex; }
+    .content{ padding:var(--sp-4); }
+    .page-header h1{ font-size:var(--fs-h3); }
+    .filters-bar{ display:none; overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+    .filters-bar.is-open{ display:flex; }
+    .filters-bar::-webkit-scrollbar{ display:none; }
+    .filters-toggle{ display:inline-flex; }
+    .page-header .btn-primary span{ display:none; }
+    .page-header .btn-primary{ width:44px; padding:0; }
+    .btn{ min-height:44px; }
+  }
+  @media (max-width: 768px){
+    .sidebar{ display:none; }
+    .app-shell{ grid-template-columns:1fr; }
+    .topbar-search{ display:none; }
+    .table-card{ display:none; }
+    .cards-list{ display:flex; }
+    .bottom-nav{ display:flex; }
+    .content{ padding:var(--sp-4); }
+    .page-header h1{ font-size:var(--fs-h3); }
+    .filters-bar{ display:none; overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+    .filters-bar.is-open{ display:flex; }
+    .filters-bar::-webkit-scrollbar{ display:none; }
+    .filters-toggle{ display:inline-flex; }
+    .page-header .btn-primary span{ display:none; }
+    .page-header .btn-primary{ width:44px; padding:0; }
+    .btn{ min-height:44px; }
+  }
+  @media (min-width: 1024px){
+    .filters-toggle{ display:none; }
+    .filters-bar{ display:flex; }
+  }
+
+  /* ---------- Prototype-only chrome (не часть продукта) ---------- */
+  .proto-controls{
+    position:fixed; right:var(--sp-4); bottom:var(--sp-4); z-index:200;
+    background:var(--c-ink); color:#fff; border-radius:var(--r-lg);
+    padding:var(--sp-3); box-shadow:var(--shadow-lg);
+    display:flex; flex-direction:column; gap:var(--sp-2);
+    font-size:var(--fs-xs); width:220px;
+  }
+  .proto-controls h5{ font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.05em; color:#94a3b8; margin:0 0 2px; font-weight:var(--fw-semibold); }
+  .proto-row{ display:flex; gap:4px; }
+  .proto-btn{
+    flex:1; height:30px; border-radius:var(--r-sm); border:1px solid #334155; background:#1e293b; color:#cbd5e1;
+    font-size:11px; cursor:pointer; font-weight:var(--fw-medium);
+  }
+  .proto-btn[aria-pressed="true"]{ background:var(--c-primary-600); border-color:var(--c-primary-600); color:#fff; }
+  .proto-controls-toggle{
+    position:fixed; right:var(--sp-4); bottom:var(--sp-4); z-index:199;
+    width:40px; height:40px; border-radius:var(--r-full); background:var(--c-ink); color:#fff; border:0;
+    display:none; align-items:center; justify-content:center; box-shadow:var(--shadow-lg); cursor:pointer;
+  }
+
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+</style>
+</head>
+<body data-role="admin">
+
+<!-- ============================================================
+     SVG ICON SPRITE
+     ============================================================ -->
+<svg class="visually-hidden" aria-hidden="true">
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+</svg>
+
+<div class="app-shell" id="appShell">
+
+  <!-- ============================================================
+       SIDEBAR (desktop)
+       ============================================================ -->
+  <aside class="sidebar" aria-label="Основная навигация">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-name">myCRM</div>
+        <div class="brand-sub">Монтаж наружной рекламы</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-group-label">Работа</div>
+      <nav class="nav-list">
+        <a class="nav-link active" href="#" data-role="admin manager mounter"><svg><use href="#i-list"/></svg>Заявки</a>
+        <a class="nav-link" href="#" data-role="admin manager mounter"><svg><use href="#i-archive"/></svg>Архив</a>
+      </nav>
+    </div>
+
+    <div data-role="admin">
+      <div class="nav-group-label">Управление</div>
+      <nav class="nav-list">
+        <a class="nav-link" href="#" data-role="admin"><svg><use href="#i-users"/></svg>Монтажники</a>
+        <a class="nav-link" href="#" data-role="admin"><svg><use href="#i-user"/></svg>Менеджеры</a>
+      </nav>
+    </div>
+
+    <div data-role="admin manager">
+      <div class="nav-group-label">Аналитика</div>
+      <nav class="nav-list">
+        <a class="nav-link" href="#" data-role="admin manager"><svg><use href="#i-chart"/></svg>Отчёты</a>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <nav class="nav-list" style="margin-bottom:var(--sp-2);">
+        <a class="nav-link" href="#" data-role="admin manager mounter"><svg><use href="#i-settings"/></svg>Настройки</a>
+      </nav>
+      <div class="user-chip">
+        <div class="avatar" id="sbAvatar">И</div>
+        <div>
+          <div class="user-chip-name" id="sbName">Иван Админов</div>
+          <div class="user-chip-role" id="sbRole">Администратор</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <div class="main">
+
+    <header class="topbar">
+      <button class="icon-btn mobile-menu-btn" aria-label="Открыть меню" data-tip="Меню"><svg><use href="#i-list"/></svg></button>
+      <label class="topbar-search">
+        <svg><use href="#i-search"/></svg>
+        <input type="search" id="searchInput" placeholder="Поиск по ТРЦ, виду работ, №…" aria-label="Поиск по заявкам">
+      </label>
+      <div class="topbar-spacer"></div>
+      <button class="icon-btn" data-tip="Уведомления" aria-label="Уведомления"><svg><use href="#i-bell"/></svg></button>
+      <div class="topbar-user">
+        <div class="avatar" id="tbAvatar">И</div>
+        <svg width="14" height="14"><use href="#i-chevron"/></svg>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="page-header">
+        <div>
+          <h1 id="pageTitle">Все заявки</h1>
+          <p id="pageSubtitle">128 заявок · обновлено сегодня в 09:40</p>
+        </div>
+        <button class="btn btn-primary" data-tip="Создать заявку"><svg><use href="#i-plus"/></svg><span>Новая заявка</span></button>
+      </div>
+
+      <button class="btn filters-toggle" id="filtersToggle" type="button" aria-expanded="false" aria-controls="filtersBar">
+        <span>Фильтры</span><span class="filters-count" id="filtersCount" hidden>0</span>
+      </button>
+
+      <div class="filters-bar" id="filtersBar">
+        <div class="pill-group" role="group" aria-label="Фильтр по статусу">
+          <button class="pill" data-status="all" aria-pressed="true">Все <span class="count">10</span></button>
+          <button class="pill" data-status="1" aria-pressed="false">В ожидании <span class="count">4</span></button>
+          <button class="pill" data-status="2" aria-pressed="false">Принят <span class="count">3</span></button>
+          <button class="pill" data-status="3" aria-pressed="false">Выполнено <span class="count">3</span></button>
+        </div>
+        <select class="select-field" aria-label="Фильтр по ТРЦ">
+          <option>Все ТРЦ</option>
+          <option>Мега Химки</option>
+          <option>Метрополис</option>
+          <option>Авиапарк</option>
+          <option>Атриум</option>
+        </select>
+        <select class="select-field" aria-label="Фильтр по периоду">
+          <option>За всё время</option>
+          <option>Сегодня</option>
+          <option>Эта неделя</option>
+          <option>Этот месяц</option>
+        </select>
+        <div class="filters-spacer"></div>
+        <button class="btn" data-tip="Экспорт в Excel" aria-label="Экспорт"><svg><use href="#i-archive"/></svg></button>
+      </div>
+
+      <!-- ============================================================
+           DESKTOP TABLE
+           ============================================================ -->
+      <div class="table-card" id="tableCard">
+        <table>
+          <thead>
+            <tr>
+              <th>№</th>
+              <th>Дата</th>
+              <th>ТРЦ</th>
+              <th>Вид работ</th>
+              <th>Ответственный</th>
+              <th>Статус</th>
+              <th style="text-align:right;">Цена</th>
+              <th style="text-align:right;">Действия</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- строки добавляются ниже, одна на заявку -->
+          </tbody>
+        </table>
+        <div class="empty-state" id="emptyStateTable">
+          <svg><use href="#i-inbox"/></svg>
+          <div><strong>Заявок не найдено</strong></div>
+          <div>Измените фильтры или поисковый запрос</div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           MOBILE CARDS
+           ============================================================ -->
+      <div class="cards-list" id="cardsList">
+        <!-- карточки добавляются ниже, одна на заявку -->
+      </div>
+      <div class="empty-state" id="emptyStateCards">
+        <svg><use href="#i-inbox"/></svg>
+        <div><strong>Заявок не найдено</strong></div>
+        <div>Измените фильтры или поисковый запрос</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       BOTTOM NAV (mobile)
+       ============================================================ -->
+  <nav class="bottom-nav" aria-label="Основная навигация">
+    <a class="bn-link active" href="#"><svg><use href="#i-list"/></svg>Заявки</a>
+    <a class="bn-link" href="#"><svg><use href="#i-archive"/></svg>Архив</a>
+    <a class="bn-fab" href="#" aria-label="Новая заявка" data-tip="Новая заявка"><svg><use href="#i-plus"/></svg></a>
+    <a class="bn-link" href="#" data-role="admin manager"><svg><use href="#i-chart"/></svg>Отчёты</a>
+    <a class="bn-link" href="#"><svg><use href="#i-user"/></svg>Профиль</a>
+  </nav>
+
+</div>
+
+<!-- ============================================================
+     BOTTOM SHEET — действия по заявке (mobile)
+     ============================================================ -->
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="bottom-sheet" id="bottomSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheetTitle">Заявка #1050</div>
+  <div class="sheet-sub" id="sheetSub">Мега Химки · Монтаж баннера</div>
+  <button class="sheet-action" data-role="admin manager mounter"><svg><use href="#i-eye"/></svg>Просмотреть заявку</button>
+  <button class="sheet-action" data-role="admin manager"><svg><use href="#i-edit"/></svg>Редактировать</button>
+  <button class="sheet-action" data-role="mounter"><svg><use href="#i-check"/></svg>Изменить статус</button>
+  <button class="sheet-action" data-role="mounter"><svg><use href="#i-camera"/></svg>Загрузить фото</button>
+  <button class="sheet-action danger" data-role="admin manager"><svg><use href="#i-trash"/></svg>Удалить заявку</button>
+  <button class="sheet-cancel" id="sheetCancel">Отмена</button>
+</div>
+
+<!-- ============================================================
+     PROTOTYPE-ONLY CONTROLS (не часть продукта myCRM)
+     ============================================================ -->
+<div class="proto-controls" id="protoControls">
+  <h5>Прототип · роль</h5>
+  <div class="proto-row" role="group" aria-label="Переключение роли">
+    <button class="proto-btn" data-set-role="admin" aria-pressed="true">Админ</button>
+    <button class="proto-btn" data-set-role="manager" aria-pressed="false">Менеджер</button>
+    <button class="proto-btn" data-set-role="mounter" aria-pressed="false">Монтажник</button>
+  </div>
+  <h5>Прототип · экран</h5>
+  <div class="proto-row" role="group" aria-label="Переключение вида экрана">
+    <button class="proto-btn" data-set-viewport="desktop" aria-pressed="true">Desktop</button>
+    <button class="proto-btn" data-set-viewport="mobile" aria-pressed="false">Mobile</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // -------- демо-данные заявок --------
+  var orders = [
+    { id:1050, date:"11.08", trc:"Мега Химки",    work:"Монтаж баннера",        managerId:"m1", managerName:"Ирина Соколова", mounterId:"t1", mounterName:"Алексей Титов",  status:1, price:18500 },
+    { id:1049, date:"10.08", trc:"Метрополис",    work:"Демонтаж конструкции",  managerId:"m1", managerName:"Ирина Соколова", mounterId:"t2", mounterName:"Дмитрий Крылов", status:2, price:9200  },
+    { id:1048, date:"10.08", trc:"Авиапарк",      work:"Замена лайтбокса",      managerId:"m2", managerName:"Павел Волков",   mounterId:"t3", mounterName:"Сергей Орлов",   status:3, price:24700 },
+    { id:1047, date:"09.08", trc:"Атриум",        work:"Монтаж вывески",        managerId:"m2", managerName:"Павел Волков",   mounterId:"t1", mounterName:"Алексей Титов",  status:3, price:15300 },
+    { id:1046, date:"09.08", trc:"Vegas Крокус",  work:"Ремонт подсветки",      managerId:"m1", managerName:"Ирина Соколова", mounterId:"t2", mounterName:"Дмитрий Крылов", status:1, price:7600  },
+    { id:1045, date:"08.08", trc:"Riviera",       work:"Монтаж стенда",         managerId:"m1", managerName:"Ирина Соколова", mounterId:"t3", mounterName:"Сергей Орлов",   status:2, price:32000 },
+    { id:1044, date:"08.08", trc:"Европейский",   work:"Демонтаж конструкции",  managerId:"m2", managerName:"Павел Волков",   mounterId:"t1", mounterName:"Алексей Титов",  status:3, price:11800 },
+    { id:1043, date:"07.08", trc:"Salaris",       work:"Монтаж баннера",        managerId:"m1", managerName:"Ирина Соколова", mounterId:"t3", mounterName:"Сергей Орлов",   status:1, price:19900 },
+    { id:1042, date:"07.08", trc:"Океания",       work:"Замена лайтбокса",      managerId:"m2", managerName:"Павел Волков",   mounterId:"t2", mounterName:"Дмитрий Крылов", status:2, price:14200 },
+    { id:1041, date:"06.08", trc:"Columbus",      work:"Монтаж вывески",        managerId:"m1", managerName:"Ирина Соколова", mounterId:"t1", mounterName:"Алексей Титов",  status:3, price:21500 }
+  ];
+
+  var STATUS = {
+    1:{ label:"В ожидании", cls:"badge-warning" },
+    2:{ label:"Принят",     cls:"badge-info" },
+    3:{ label:"Выполнено",  cls:"badge-success" }
+  };
+
+  // текущий "я" для роли менеджер / монтажник (демо)
+  var CURRENT = { managerId:"m1", mounterId:"t1" };
+
+  function fmtPrice(n){ return n.toLocaleString("ru-RU") + " ₽"; }
+
+  function respText(o){
+    return (
+      '<span class="resp-text" data-role="admin">Менеджер: <b>' + o.managerName + '</b><br>Монтажник: <b>' + o.mounterName + '</b></span>' +
+      '<span class="resp-text" data-role="manager">Монтажник: <b>' + o.mounterName + '</b></span>' +
+      '<span class="resp-text" data-role="mounter">Менеджер: <b>' + o.managerName + '</b></span>'
+    );
+  }
+
+  function rowHtml(o){
+    var st = STATUS[o.status];
+    var urgent = o.status === 1 ? " is-urgent" : "";
+    return (
+      '<tr class="order-row' + urgent + '" data-status="' + o.status + '" data-manager="' + o.managerId + '" data-mounter="' + o.mounterId + '" data-search="' + (o.trc + ' ' + o.work + ' ' + o.id).toLowerCase() + '">' +
+        '<td class="cell-id">#' + o.id + '</td>' +
+        '<td>' + o.date + '</td>' +
+        '<td class="cell-trc">' + o.trc + '</td>' +
+        '<td>' + o.work + '</td>' +
+        '<td>' + respText(o) + '</td>' +
+        '<td><span class="badge ' + st.cls + '">' + st.label + '</span></td>' +
+        '<td style="text-align:right;" class="cell-price">' + fmtPrice(o.price) + '</td>' +
+        '<td>' +
+          '<div class="row-actions">' +
+            '<button class="act-btn" data-role="admin manager mounter" data-tip="Просмотреть" aria-label="Просмотреть заявку #' + o.id + '"><svg><use href="#i-eye"/></svg></button>' +
+            '<button class="act-btn" data-role="admin manager" data-tip="Редактировать" aria-label="Редактировать заявку #' + o.id + '"><svg><use href="#i-edit"/></svg></button>' +
+            '<button class="act-btn" data-role="mounter" data-tip="Изменить статус" aria-label="Изменить статус заявки #' + o.id + '"><svg><use href="#i-check"/></svg></button>' +
+            '<button class="act-btn" data-role="mounter" data-tip="Загрузить фото" aria-label="Загрузить фото к заявке #' + o.id + '"><svg><use href="#i-camera"/></svg></button>' +
+            '<button class="act-btn danger" data-role="admin manager" data-tip="Удалить" aria-label="Удалить заявку #' + o.id + '"><svg><use href="#i-trash"/></svg></button>' +
+          '</div>' +
+        '</td>' +
+      '</tr>'
+    );
+  }
+
+  function cardHtml(o){
+    var st = STATUS[o.status];
+    var urgent = o.status === 1 ? " is-urgent" : "";
+    return (
+      '<div class="order-card' + urgent + '" data-status="' + o.status + '" data-manager="' + o.managerId + '" data-mounter="' + o.mounterId + '" data-search="' + (o.trc + ' ' + o.work + ' ' + o.id).toLowerCase() + '" ' +
+           'data-id="' + o.id + '" data-trc="' + o.trc + '" data-work="' + o.work + '">' +
+        '<div class="order-card-top">' +
+          '<span class="order-card-id">#' + o.id + ' · ' + o.date + '</span>' +
+          '<span class="badge ' + st.cls + '">' + st.label + '</span>' +
+        '</div>' +
+        '<div class="order-card-trc">' + o.trc + '</div>' +
+        '<div class="order-card-work">' + o.work + '</div>' +
+        '<div class="order-card-meta">' + respText(o) + '</div>' +
+        '<div class="order-card-footer">' +
+          '<span class="order-card-price">' + fmtPrice(o.price) + '</span>' +
+          '<button class="more-btn" data-tip="Действия" aria-label="Действия с заявкой #' + o.id + '"><svg><use href="#i-dots"/></svg></button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  var tableBody = document.getElementById("tableBody");
+  var cardsList = document.getElementById("cardsList");
+  orders.forEach(function(o){
+    tableBody.insertAdjacentHTML("beforeend", rowHtml(o));
+    cardsList.insertAdjacentHTML("beforeend", cardHtml(o));
+  });
+
+  // -------- статус-счётчики в пилюлях --------
+  ["1","2","3"].forEach(function(s){
+    var count = orders.filter(function(o){ return String(o.status) === s; }).length;
+    var el = document.querySelector('.pill[data-status="' + s + '"] .count');
+    if (el) el.textContent = count;
+  });
+
+  // -------- фильтрация: роль + статус + поиск --------
+  var state = { role:"admin", status:"all", query:"" };
+
+  function ownerMatches(el){
+    if (state.role === "admin") return true;
+    if (state.role === "manager") return el.dataset.manager === CURRENT.managerId;
+    if (state.role === "mounter") return el.dataset.mounter === CURRENT.mounterId;
+    return true;
+  }
+
+  function applyFilters(){
+    var visibleCount = 0;
+    [].slice.call(document.querySelectorAll(".order-row, .order-card")).forEach(function(el){
+      var show = ownerMatches(el);
+      if (show && state.status !== "all") show = el.dataset.status === state.status;
+      if (show && state.query) show = el.dataset.search.indexOf(state.query) !== -1;
+      el.style.display = show ? "" : "none";
+      if (show) visibleCount++;
+    });
+    document.getElementById("emptyStateTable").classList.toggle("is-visible", visibleCount === 0);
+    document.getElementById("emptyStateCards").classList.toggle("is-visible", visibleCount === 0);
+
+    var subtitle = document.getElementById("pageSubtitle");
+    subtitle.textContent = visibleCount + (visibleCount === 1 ? " заявка" : " заявок") + " · обновлено сегодня в 09:40";
+  }
+
+  // -------- переключение роли --------
+  var ROLE_META = {
+    admin:   { title:"Все заявки",   name:"Иван Админов",    role:"Администратор", initial:"И" },
+    manager: { title:"Мои заявки",   name:"Ирина Соколова",  role:"Менеджер",      initial:"И" },
+    mounter: { title:"Мои заявки",   name:"Алексей Титов",   role:"Монтажник",     initial:"А" }
+  };
+
+  function setRole(role){
+    state.role = role;
+    document.body.dataset.role = role;
+    var meta = ROLE_META[role];
+    document.getElementById("pageTitle").textContent = meta.title;
+    document.getElementById("sbName").textContent = meta.name;
+    document.getElementById("sbRole").textContent = meta.role;
+    document.getElementById("sbAvatar").textContent = meta.initial;
+    document.getElementById("tbAvatar").textContent = meta.initial;
+    document.querySelectorAll("[data-set-role]").forEach(function(btn){
+      btn.setAttribute("aria-pressed", btn.dataset.setRole === role ? "true" : "false");
+    });
+    applyFilters();
+  }
+
+  document.querySelectorAll("[data-set-role]").forEach(function(btn){
+    btn.addEventListener("click", function(){ setRole(btn.dataset.setRole); });
+  });
+
+  // -------- переключение desktop / mobile превью --------
+  var shell = document.getElementById("appShell");
+  document.querySelectorAll("[data-set-viewport]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var mode = btn.dataset.setViewport;
+      shell.classList.toggle("preview-mobile", mode === "mobile");
+      document.querySelectorAll("[data-set-viewport]").forEach(function(b){
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+    });
+  });
+
+  // -------- статус-пилюли --------
+  var filtersCount = document.getElementById("filtersCount");
+  document.querySelectorAll(".pill[data-status]").forEach(function(pill){
+    pill.addEventListener("click", function(){
+      state.status = pill.dataset.status;
+      document.querySelectorAll(".pill[data-status]").forEach(function(p){
+        p.setAttribute("aria-pressed", p === pill ? "true" : "false");
+      });
+      filtersCount.hidden = state.status === "all";
+      filtersCount.textContent = "1";
+      applyFilters();
+    });
+  });
+
+  // -------- бейдж-кнопка "Фильтры" (мобильный тоггл) --------
+  var filtersToggle = document.getElementById("filtersToggle");
+  var filtersBar = document.getElementById("filtersBar");
+  filtersToggle.addEventListener("click", function(){
+    var isOpen = filtersBar.classList.toggle("is-open");
+    filtersToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  });
+
+  // -------- поиск --------
+  document.getElementById("searchInput").addEventListener("input", function(e){
+    state.query = e.target.value.trim().toLowerCase();
+    applyFilters();
+  });
+
+  // -------- bottom sheet (мобильные действия) --------
+  var sheet = document.getElementById("bottomSheet");
+  var backdrop = document.getElementById("sheetBackdrop");
+
+  function openSheet(card){
+    document.getElementById("sheetTitle").textContent = "Заявка #" + card.dataset.id;
+    document.getElementById("sheetSub").textContent = card.dataset.trc + " · " + card.dataset.work;
+    sheet.classList.add("is-open");
+    backdrop.classList.add("is-open");
+  }
+  function closeSheet(){
+    sheet.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+  }
+  cardsList.addEventListener("click", function(e){
+    var btn = e.target.closest(".more-btn");
+    if (!btn) return;
+    openSheet(btn.closest(".order-card"));
+  });
+  backdrop.addEventListener("click", closeSheet);
+  document.getElementById("sheetCancel").addEventListener("click", closeSheet);
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeSheet(); });
+  sheet.querySelectorAll(".sheet-action").forEach(function(a){ a.addEventListener("click", closeSheet); });
+
+  // -------- init --------
+  setRole("admin");
+})();
+</script>
+</body>
+</html>

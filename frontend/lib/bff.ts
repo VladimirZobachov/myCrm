@@ -2,7 +2,9 @@
 // JWT живёт в httpOnly cookie — недоступен JS, XSS не украдёт токен.
 // Эти функции вызываются ТОЛЬКО из Next.js API routes (app/api/*/route.ts).
 
-export const BACKEND_API = process.env.BACKEND_API_URL || 'http://localhost:8000/api';
+// Важно: 127.0.0.1 вместо localhost — Node резолвит localhost в ::1 (IPv6),
+// а Laravel слушает только IPv4 (ECONNREFUSED ::1:8000).
+export const BACKEND_API = process.env.BACKEND_API_URL || 'http://127.0.0.1:8000/api';
 export const AUTH_COOKIE = 'mycrm_token';
 
 // Разобрать cookie-строку, вернуть значение токена

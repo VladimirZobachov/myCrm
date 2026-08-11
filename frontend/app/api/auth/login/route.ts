@@ -12,9 +12,11 @@ export async function POST(req: NextRequest) {
     const data = await bffLogin(login, passwd);
 
     const res = NextResponse.json({ user: data.user });
+    // Secure ТОЛЬКО при HTTPS (иначе браузер не отправит cookie по HTTP!)
+    const isHttps = process.env.NODE_ENV === 'production' && req.nextUrl.protocol === 'https:';
     res.cookies.set(AUTH_COOKIE, data.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isHttps,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60, // 1 час (совпадает с JWT TTL)
