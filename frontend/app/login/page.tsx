@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, setToken } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,9 +15,18 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await api.login(login, passwd);
-      setToken(res.access_token);
+      // BFF ставит httpOnly cookie (JWT недоступен JS — XSS-safe)
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, passwd }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.error || 'Ошибка входа');
+      }
       router.push('/');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка входа');
     } finally {
@@ -70,6 +78,12 @@ export default function LoginPage() {
         >
           {loading ? 'Вход...' : 'Войти'}
         </button>
+
+        <div className="text-center">
+          <a href="/register" className="text-sm text-indigo-600 hover:underline">
+            Нет аккаунта? Зарегистрироваться
+          </a>
+        </div>
       </form>
     </main>
   );

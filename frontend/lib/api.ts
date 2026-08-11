@@ -1,5 +1,7 @@
 // API-клиент для MyCRM backend (Laravel API)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// Все запросы идут через BFF-прокси Next.js (app/api/bff/[...path]).
+// JWT живёт в httpOnly cookie (ставится /api/auth/login) — JS его не видит (XSS-safe).
+const API_URL = '/api/bff';
 
 export interface User {
   id: number;
@@ -58,16 +60,15 @@ export interface Paginated<T> {
   per_page: number;
 }
 
-// В v1 JWT храним в localStorage (для httpOnly-cookie нужен BFF — Итерация 7)
-const TOKEN_KEY = 'mycrm_token';
+// v2: JWT в httpOnly cookie (BFF). localStorage больше НЕ используется.
+const TOKEN_KEY = 'mycrm_token'; // сохранён для совместимости старых сессий
 
 export function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return null; // токен недоступен JS — в httpOnly cookie
 }
 
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+export function setToken(_token: string): void {
+  // no-op: токен ставится сервером через Set-Cookie
 }
 
 export function clearToken(): void {
@@ -75,18 +76,17 @@ export function clearToken(): void {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' });
 
   if (res.status === 401) {
-    clearToken();
-    if (typeof window !== 'undefined') window.location.href = '/login';
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
+    }
     throw new Error('Не авторизован');
   }
 

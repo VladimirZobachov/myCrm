@@ -66,6 +66,12 @@ export default function OrdersPage() {
             >
               Пользователи
             </a>
+            <a
+              href="/profile"
+              className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2 flex items-center"
+            >
+              Кабинет
+            </a>
             <button
               onClick={() => setShowExport(true)}
               className="text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2"
@@ -73,7 +79,10 @@ export default function OrdersPage() {
               Экспорт
             </button>
             <button
-              onClick={() => { localStorage.removeItem('mycrm_token'); window.location.href = '/login'; }}
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+              }}
               className="text-sm text-slate-500 hover:text-slate-700 min-h-[44px] px-2"
             >
               Выход
