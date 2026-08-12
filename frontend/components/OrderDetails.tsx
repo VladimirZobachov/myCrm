@@ -2,14 +2,13 @@
 
 import { Order } from '@/lib/api';
 import { StatusBadge, formatDate } from '@/components/StatusBadge';
+import PhotoGallery, { mergePhotos } from '@/components/PhotoGallery';
 
 /**
  * Детальная карточка заявки (для app/orders/[id]).
  */
 export default function OrderDetails({ order }: { order: Order }) {
-  const photos = order.photo
-    ? order.photo.split(/\s+/).filter((p) => p && p !== '-')
-    : [];
+  const hasPhotos = mergePhotos(order.photos, order.photo).length > 0;
 
   const rows: { label: string; value: React.ReactNode }[] = [
     { label: 'Дата создания', value: formatDate(order.date_create) },
@@ -46,22 +45,10 @@ export default function OrderDetails({ order }: { order: Order }) {
       </dl>
 
       {/* Фотопривязка */}
-      {photos.length > 0 && (
+      {hasPhotos && (
         <div className="px-6 py-4 border-t border-slate-200">
           <div className="text-sm text-slate-500 mb-2">Фотопривязка</div>
-          <div className="flex flex-wrap gap-2">
-            {photos.map((p, i) => (
-              <a
-                key={i}
-                href={p}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-blue-600 hover:underline break-all"
-              >
-                {p.slice(0, 50)}...
-              </a>
-            ))}
-          </div>
+          <PhotoGallery photos={order.photos} legacyPhoto={order.photo} variant="grid" />
         </div>
       )}
     </div>

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Order, api } from '@/lib/api';
+import { Order, Photo, api } from '@/lib/api';
 import { TRC_OPTIONS, WHERE_OPTIONS, IMPORTANCE_OPTIONS } from '@/lib/constants';
+import PhotoUploader from '@/components/PhotoUploader';
 
 /**
  * Форма заявки (1:1 с legacy fillFormData), раскладка — по new-order.png/edit-order.png:
@@ -39,6 +40,8 @@ export default function OrderForm({
     importance_other: order?.importance_other ?? '',
     created_for: order?.created_for?.id ? String(order.created_for.id) : '',
   });
+  const [photos, setPhotos] = useState<Photo[]>(order?.photos ?? []);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -59,17 +62,43 @@ export default function OrderForm({
     setLoading(true);
     try {
       const payload = { ...form };
-      if (order) {
-        const saved = await api.updateOrder(order.id, payload);
-        onSaved(saved);
-      } else {
-        const saved = await api.createOrder(payload);
-        onSaved(saved);
+      const saved = order
+        ? await api.updateOrder(order.id, payload)
+        : await api.createOrder(payload);
+
+      // Файлы грузятся после того, как у заказа точно есть id
+      // (при создании — только что созданного).
+      if (pendingFiles.length > 0) {
+        const uploaded: Photo[] = [];
+        for (const file of pendingFiles) {
+          uploaded.push(await api.uploadPhoto(saved.id, file));
+        }
+        setPhotos((ps) => [...ps, ...uploaded]);
+        setPendingFiles([]);
       }
+
+      onSaved(saved);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleFilesAdd(files: File[]) {
+    setPendingFiles((fs) => [...fs, ...files]);
+  }
+
+  function handlePendingRemove(index: number) {
+    setPendingFiles((fs) => fs.filter((_, i) => i !== index));
+  }
+
+  async function handleExistingDelete(photoId: number) {
+    try {
+      await api.deletePhoto(photoId);
+      setPhotos((ps) => ps.filter((p) => p.id !== photoId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка удаления фото');
     }
   }
 
@@ -213,14 +242,14 @@ export default function OrderForm({
           </div>
 
           <div>
-            <label htmlFor="photo" className={labelCls}>Фотопривязка</label>
-            <input
-              id="photo"
-              type="text"
-              value={form.photo}
-              onChange={(e) => set('photo', e.target.value)}
-              className={inputCls}
-              placeholder="Ссылка на фото"
+            <div className={labelCls}>Фотопривязка</div>
+            <PhotoUploader
+              photos={photos}
+              pendingFiles={pendingFiles}
+              onFilesAdd={handleFilesAdd}
+              onPendingRemove={handlePendingRemove}
+              onExistingDelete={handleExistingDelete}
+              disabled={loading}
             />
           </div>
 

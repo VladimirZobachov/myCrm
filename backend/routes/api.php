@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrderExportController;
+use App\Http\Controllers\Api\PhotoController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MeController;
 
@@ -47,7 +48,12 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/orders/export/job/{id}', [OrderExportController::class, 'showJob']);
     Route::get('/orders/export/job/{id}/download', [OrderExportController::class, 'downloadJob']);
 
+    // Фото заявок — DELETE стоит ПЕРЕД apiResource('orders'), чтобы
+    // /orders/photos/{photo} не путался с destroy() из apiResource (/orders/{order}).
+    Route::delete('/orders/photos/{photo}', [PhotoController::class, 'destroy']);
+
     Route::apiResource('orders', OrderController::class);
+    Route::post('/orders/{order}/photos', [PhotoController::class, 'store']);
     Route::patch('/orders/{order}/comment', [OrderController::class, 'updateComment']);
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
     Route::patch('/orders/{order}/archive', [OrderController::class, 'archive']);

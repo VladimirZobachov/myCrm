@@ -11,6 +11,11 @@ export interface User {
   type_user: number;
 }
 
+export interface Photo {
+  id: number;
+  url: string;
+}
+
 export interface Order {
   id: number;
   date_create: string;
@@ -32,6 +37,7 @@ export interface Order {
   comment_manager: string;
   status: number;
   is_archived: number;
+  photos?: Photo[];
 }
 
 export interface OrderInput {
@@ -75,14 +81,7 @@ export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
-
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' });
-
+async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 401) {
     if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
       window.location.href = '/login';
@@ -99,6 +98,27 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   return res.json();
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' });
+  return handleResponse<T>(res);
+}
+
+// Загрузка файла — FormData/multipart, а НЕ JSON. Content-Type с boundary
+// браузер выставляет сам, поэтому здесь его нельзя задавать вручную.
+async function uploadFile<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+  return handleResponse<T>(res);
 }
 
 export const api = {
@@ -134,4 +154,13 @@ export const api = {
     request<Order>(`/orders/${id}/comment`, { method: 'PATCH', body: JSON.stringify({ comment, ...(forUser !== undefined ? { for: forUser } : {}) }) }),
   archive: (id: number, archived: boolean) =>
     request<Order>(`/orders/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ archived }) }),
+
+  // Photos
+  uploadPhoto: (orderId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return uploadFile<Photo>(`/orders/${orderId}/photos`, formData);
+  },
+  deletePhoto: (photoId: number) =>
+    request<{ message: string }>(`/orders/photos/${photoId}`, { method: 'DELETE' }),
 };

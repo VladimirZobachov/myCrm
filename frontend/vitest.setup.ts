@@ -16,3 +16,13 @@ if (typeof window !== 'undefined') {
 
 // fetch mock
 global.fetch = vi.fn() as unknown as typeof fetch;
+
+// jsdom не реализует createObjectURL/revokeObjectURL — нужны для превью фото
+if (typeof window !== 'undefined') {
+  if (!window.URL.createObjectURL) {
+    window.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+  }
+  if (!window.URL.revokeObjectURL) {
+    window.URL.revokeObjectURL = vi.fn();
+  }
+}

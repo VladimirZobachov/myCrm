@@ -4,6 +4,7 @@ import { Order } from '@/lib/api';
 import { StatusBadge, formatDate } from '@/components/StatusBadge';
 import { importanceBadge } from '@/lib/constants';
 import RowActions from '@/components/RowActions';
+import PhotoGallery from '@/components/PhotoGallery';
 
 // Ролевая видимость колонок (1:1 с legacy index.php table_headers)
 // type_user: 1=админ, 2=менеджер, 3=монтажник
@@ -113,12 +114,7 @@ const COLUMNS: Column[] = [
   },
   {
     key: 'photo', headers: [{ key: 'photo', label: 'Фото' }], visibleFor: [1, 2, 3],
-    render: (o) =>
-      o.photo && o.photo !== '-' ? (
-        <a href={o.photo.split(' ')[0]} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">
-          Фото
-        </a>
-      ) : <span className="text-slate-300">—</span>,
+    render: (o) => <PhotoGallery photos={o.photos} legacyPhoto={o.photo} variant="compact" max={3} />,
   },
   {
     key: 'executors', headers: [{ key: 'executors', label: 'Исполнители' }], visibleFor: [1, 2], // legacy: type != 3

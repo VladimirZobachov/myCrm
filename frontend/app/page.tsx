@@ -8,6 +8,7 @@ import OrdersTable from '@/components/OrdersTable';
 import ExportModal from '@/components/ExportModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import RowActions from '@/components/RowActions';
+import PhotoGallery from '@/components/PhotoGallery';
 
 function AccountIcon() {
   return (
@@ -175,6 +176,7 @@ export default function OrdersPage() {
                   ['Менеджер:', o.created_by?.fio || '—'],
                   ...(role === 1 ? ([['Монтажник:', o.created_for?.fio || '—']] as [string, React.ReactNode][]) : []),
                   ['Где печать:', o.where_print],
+                  ['Фото:', <PhotoGallery key="photo" photos={o.photos} legacyPhoto={o.photo} variant="compact" max={3} />],
                   ['Комментарий монтажнику:', o.comments || '—'],
                 ];
                 return (

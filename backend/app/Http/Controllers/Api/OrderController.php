@@ -37,7 +37,7 @@ class OrderController extends Controller
         $sortDir = strtoupper($sortParts[1] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
 
         $query = Order::query()
-            ->with(['createdBy:id,fio,email,type_user', 'createdFor:id,fio,email,type_user'])
+            ->with(['createdBy:id,fio,email,type_user', 'createdFor:id,fio,email,type_user', 'photos'])
             ->visibleTo($user)
             ->where('is_archived', $archived ? 1 : 0);
 
@@ -93,7 +93,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        return response()->json($order->load(['createdBy', 'createdFor']));
+        return response()->json($order->load(['createdBy', 'createdFor', 'photos']));
     }
 
     /**

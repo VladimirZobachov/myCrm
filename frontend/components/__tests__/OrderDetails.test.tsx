@@ -47,16 +47,18 @@ describe('OrderDetails (#35)', () => {
     expect(screen.getByText('принят')).toBeInTheDocument();
   });
 
-  it('фотопривязка рендерит ссылки', () => {
+  it('фотопривязка рендерит миниатюры галереи', () => {
     render(<OrderDetails order={makeOrder()} />);
-    const links = screen.getAllByRole('link', { name: /joxi.ru/i });
-    expect(links.length).toBe(2);
+    expect(screen.getByText('Фотопривязка')).toBeInTheDocument();
+    const thumbs = screen.getAllByTestId('photo-thumb');
+    expect(thumbs.length).toBe(2);
   });
 
-  it('без фото — заглушка', () => {
+  it('без фото — секция «Фотопривязка» не рендерится', () => {
     const o = makeOrder();
     o.photo = '';
     render(<OrderDetails order={o} />);
-    expect(screen.queryByRole('link', { name: /joxi.ru/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Фотопривязка')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('photo-thumb')).not.toBeInTheDocument();
   });
 });
