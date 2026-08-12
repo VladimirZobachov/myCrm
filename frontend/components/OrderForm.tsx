@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Order, Photo, api } from '@/lib/api';
 import { TRC_OPTIONS, WHERE_OPTIONS, IMPORTANCE_OPTIONS } from '@/lib/constants';
-import PhotoUploader from '@/components/PhotoUploader';
+import PhotoUploader, { PhotoUploadStatus } from '@/components/PhotoUploader';
 
 /**
  * Форма заявки (1:1 с legacy fillFormData), раскладка — по new-order.png/edit-order.png:
@@ -42,6 +42,9 @@ export default function OrderForm({
   });
   const [photos, setPhotos] = useState<Photo[]>(order?.photos ?? []);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  // Статус загрузки — по ссылке на File (индексы pendingFiles «плывут» при удалении/ретрае).
+  const [uploadStatus, setUploadStatus] = useState<Map<File, PhotoUploadStatus>>(new Map());
+  const [savedOrderId, setSavedOrderId] = useState<number | undefined>(order?.id);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -56,6 +59,34 @@ export default function OrderForm({
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  // Грузит один файл и сразу переносит его из очереди в photos при успехе.
+  // При ошибке файл остаётся в pendingFiles со статусом 'error' — для retry.
+  async function uploadOneFile(orderId: number, file: File): Promise<boolean> {
+    setUploadStatus((s) => new Map(s).set(file, { status: 'uploading', progress: 0 }));
+    try {
+      const photo = await api.uploadPhoto(orderId, file, (progress) => {
+        setUploadStatus((s) => new Map(s).set(file, { status: 'uploading', progress }));
+      });
+      setPhotos((ps) => [...ps, photo]);
+      setPendingFiles((fs) => fs.filter((f) => f !== file));
+      setUploadStatus((s) => {
+        const next = new Map(s);
+        next.delete(file);
+        return next;
+      });
+      return true;
+    } catch (err) {
+      setUploadStatus((s) =>
+        new Map(s).set(file, {
+          status: 'error',
+          progress: 0,
+          error: err instanceof Error ? err.message : 'Ошибка загрузки',
+        })
+      );
+      return false;
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -65,16 +96,20 @@ export default function OrderForm({
       const saved = order
         ? await api.updateOrder(order.id, payload)
         : await api.createOrder(payload);
+      setSavedOrderId(saved.id);
 
       // Файлы грузятся после того, как у заказа точно есть id
       // (при создании — только что созданного).
       if (pendingFiles.length > 0) {
-        const uploaded: Photo[] = [];
-        for (const file of pendingFiles) {
-          uploaded.push(await api.uploadPhoto(saved.id, file));
+        const results = await Promise.all(
+          pendingFiles.map((file) => uploadOneFile(saved.id, file))
+        );
+        if (results.some((ok) => !ok)) {
+          // Заказ уже сохранён — не уходим со страницы, чтобы не потерять
+          // неудачные фото и не создать заказ повторно. Повтор — кнопкой «Повторить».
+          setError('Часть фото не загрузилась. Повторите загрузку отмеченных файлов.');
+          return;
         }
-        setPhotos((ps) => [...ps, ...uploaded]);
-        setPendingFiles([]);
       }
 
       onSaved(saved);
@@ -85,12 +120,28 @@ export default function OrderForm({
     }
   }
 
+  function handleRetryUpload(file: File) {
+    if (!savedOrderId) return;
+    uploadOneFile(savedOrderId, file);
+  }
+
   function handleFilesAdd(files: File[]) {
     setPendingFiles((fs) => [...fs, ...files]);
   }
 
   function handlePendingRemove(index: number) {
-    setPendingFiles((fs) => fs.filter((_, i) => i !== index));
+    setPendingFiles((fs) => {
+      const removed = fs[index];
+      if (removed) {
+        setUploadStatus((s) => {
+          if (!s.has(removed)) return s;
+          const next = new Map(s);
+          next.delete(removed);
+          return next;
+        });
+      }
+      return fs.filter((_, i) => i !== index);
+    });
   }
 
   async function handleExistingDelete(photoId: number) {
@@ -105,7 +156,7 @@ export default function OrderForm({
   const inputCls =
     'w-full rounded-lg border border-slate-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500';
   const labelCls = 'block text-sm font-medium text-slate-700 mb-1';
-  const radioRowCls = 'flex items-center gap-2 text-sm text-slate-700 py-1';
+  const radioRowCls = 'flex items-center gap-2 min-h-[44px] text-sm text-slate-700';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -246,9 +297,11 @@ export default function OrderForm({
             <PhotoUploader
               photos={photos}
               pendingFiles={pendingFiles}
+              uploadStatus={uploadStatus}
               onFilesAdd={handleFilesAdd}
               onPendingRemove={handlePendingRemove}
               onExistingDelete={handleExistingDelete}
+              onRetry={handleRetryUpload}
               disabled={loading}
             />
           </div>

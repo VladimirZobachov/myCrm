@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Order, api } from '@/lib/api';
 import StatusModal from '@/components/StatusModal';
 import CommentModal from '@/components/CommentModal';
+import Modal from '@/components/Modal';
 
 function MoreIcon() {
   return (
@@ -68,52 +69,47 @@ export default function RowActions({ order, role, onChanged }: { order: Order; r
         onClick={() => setShowMenu(true)}
         disabled={busy}
         aria-label="Действия"
-        className="flex items-center justify-center size-8 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
+        className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
       >
         <MoreIcon />
       </button>
 
       {showMenu && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowMenu(false)}>
-          <div
-            className="w-full max-w-xs rounded-2xl bg-white shadow-xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-gradient-to-b from-slate-100 to-white px-6 py-4">
-              <h2 className="text-lg font-semibold text-blue-600">Действия по заявке №{order.id}</h2>
-            </div>
-            <div className="px-4 py-3 flex flex-col">
-              <button
-                onClick={() => { setShowMenu(false); setShowStatus(true); }}
-                className="min-h-[40px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
-              >
-                Сменить статус
-              </button>
-              <button
-                onClick={() => { setShowMenu(false); setShowComment(true); }}
-                className="min-h-[40px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
-              >
-                Комментарий
-              </button>
-              {role === 1 && (
-                <button
-                  onClick={toggleArchive}
-                  className="min-h-[40px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
-                >
-                  {order.is_archived ? 'Разархивировать' : 'Архив'}
-                </button>
-              )}
-            </div>
-            <div className="px-6 py-4 flex justify-end">
-              <button
-                onClick={() => setShowMenu(false)}
-                className="min-h-[40px] rounded-lg border border-blue-600 px-4 text-sm font-medium text-blue-600 hover:bg-blue-50"
-              >
-                Отмена
-              </button>
-            </div>
+        <Modal onClose={() => setShowMenu(false)} maxWidth="sm:max-w-xs">
+          <div className="bg-gradient-to-b from-slate-100 to-white px-6 py-4">
+            <h2 className="text-lg font-semibold text-blue-600">Действия по заявке №{order.id}</h2>
           </div>
-        </div>
+          <div className="px-4 py-3 flex flex-col">
+            <button
+              onClick={() => { setShowMenu(false); setShowStatus(true); }}
+              className="min-h-[44px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+            >
+              Сменить статус
+            </button>
+            <button
+              onClick={() => { setShowMenu(false); setShowComment(true); }}
+              className="min-h-[44px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+            >
+              Комментарий
+            </button>
+            {role === 1 && (
+              <button
+                onClick={toggleArchive}
+                className="min-h-[44px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+              >
+                {order.is_archived ? 'Разархивировать' : 'Архив'}
+              </button>
+            )}
+          </div>
+          <div className="px-6 py-4 flex justify-end">
+            <button
+              onClick={() => setShowMenu(false)}
+              className="min-h-[44px] rounded-lg border border-blue-600 px-4 text-sm font-medium text-blue-600 hover:bg-blue-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </Modal>
       )}
 
       {showStatus && (

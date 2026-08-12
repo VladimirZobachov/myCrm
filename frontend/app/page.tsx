@@ -28,8 +28,16 @@ function LogoutIcon() {
   );
 }
 
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function NavTab({ active, href, onClick, children }: { active: boolean; href?: string; onClick?: () => void; children: React.ReactNode }) {
-  const cls = `min-h-[40px] px-1 flex items-center text-sm font-medium border-b-2 transition-colors ${
+  const cls = `min-h-[44px] px-1 flex items-center text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
     active ? 'text-blue-600 border-blue-600' : 'text-slate-600 border-transparent hover:text-slate-900'
   }`;
   if (href) return <a href={href} className={cls}>{children}</a>;
@@ -44,7 +52,7 @@ function Pagination({ page, lastPage, onPage }: { page: number; lastPage: number
         <button
           key={n}
           onClick={() => onPage(n)}
-          className={`min-h-[40px] min-w-[40px] rounded-lg text-sm font-medium transition-colors ${
+          className={`min-h-[44px] min-w-[44px] rounded-lg text-sm font-medium transition-colors ${
             page === n ? 'bg-blue-600 text-white' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
           }`}
         >
@@ -55,7 +63,7 @@ function Pagination({ page, lastPage, onPage }: { page: number; lastPage: number
       <button
         onClick={() => onPage(Math.min(lastPage, page + 1))}
         disabled={page === lastPage}
-        className="min-h-[40px] px-4 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white"
+        className="min-h-[44px] px-4 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white"
       >
         Вперед
       </button>
@@ -109,10 +117,10 @@ export default function OrdersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100">
-      {/* Топ-панель */}
+    <main className="min-h-dvh bg-slate-100">
+      {/* Топ-панель: десктоп (lg+) — одна строка, как раньше */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-[60px] flex items-center gap-6">
+        <div className="hidden lg:flex max-w-7xl mx-auto px-4 h-[60px] items-center gap-6">
           <span className="text-2xl font-light text-slate-400 tracking-wide flex-none">CRM</span>
 
           <nav className="flex items-center gap-6 flex-none">
@@ -148,10 +156,68 @@ export default function OrdersPage() {
             </button>
           </div>
         </div>
+
+        {/* Мобильная топ-панель: логотип + аккаунт/выход, ниже — вкладки и экспорт
+            (компактно, чтобы не было горизонтального скролла страницы на 320px) */}
+        <div className="lg:hidden">
+          <div className="flex items-center justify-between px-2 h-14">
+            <span className="text-xl font-light text-slate-400 tracking-wide pl-2">CRM</span>
+            <div className="flex items-center">
+              <a
+                href="/profile"
+                title="Аккаунт"
+                className="flex items-center justify-center min-h-[44px] min-w-[44px] text-slate-500 hover:text-slate-800"
+              >
+                <AccountIcon />
+              </a>
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                title="Выйти"
+                className="flex items-center justify-center min-h-[44px] min-w-[44px] text-slate-500 hover:text-slate-800"
+              >
+                <LogoutIcon />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 px-3 pb-1 overflow-x-auto">
+            <NavTab active={!archived} onClick={() => { setArchived(false); setPage(1); }}>Заказы</NavTab>
+            <NavTab active={archived} onClick={() => { setArchived(true); setPage(1); }}>Архив</NavTab>
+            <NavTab active={false} href="/users">Пользователи</NavTab>
+            <button
+              onClick={() => setShowExport(true)}
+              className="ml-auto min-h-[44px] px-3 rounded-lg border border-blue-600 text-blue-600 text-sm font-medium whitespace-nowrap"
+            >
+              Экспорт
+            </button>
+          </div>
+        </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{error}</div>}
+      {/* Плавающая кнопка «Новый заказ» — мобильный, всегда в thumb-зоне (низ-справа) */}
+      <a
+        href="/orders/new"
+        aria-label="Новый заказ"
+        className="lg:hidden fixed z-30 flex items-center justify-center size-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+        style={{ bottom: 'max(1.25rem, env(safe-area-inset-bottom))', right: '1.25rem' }}
+      >
+        <PlusIcon />
+      </a>
+
+      <div className="max-w-7xl mx-auto px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6 space-y-4">
+        {error && data && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{error}</div>}
+
+        {error && !data && !loading && (
+          <div className="bg-white rounded-xl border border-red-200 shadow-sm p-10 text-center space-y-4">
+            <p className="text-red-700 font-medium">Не удалось загрузить заявки</p>
+            <p className="text-sm text-slate-500">{error}</p>
+            <button
+              onClick={reload}
+              className="min-h-[44px] px-5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+            >
+              Повторить
+            </button>
+          </div>
+        )}
 
         {loading && <div className="text-center py-10 text-slate-400">Загрузка...</div>}
 

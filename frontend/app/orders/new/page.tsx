@@ -29,7 +29,7 @@ export default function NewOrderPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-100 py-8 px-4">
+    <main className="min-h-dvh bg-slate-100 py-8 px-4">
       <div className="max-w-3xl mx-auto rounded-2xl bg-white shadow-sm border border-slate-200 overflow-hidden">
         <div className="bg-gradient-to-b from-slate-100 to-white px-6 py-4">
           <h1 className="text-xl font-semibold text-blue-600">Новый заказ</h1>

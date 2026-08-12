@@ -106,19 +106,69 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...(options.headers as Record<string, string>),
   };
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' });
+  } catch (e) {
+    // fetch кидает TypeError при обрыве сети/недоступности сервера (не HTTP-ошибка)
+    if (e instanceof TypeError) {
+      throw new Error('Нет соединения с сервером. Проверьте интернет');
+    }
+    throw e;
+  }
   return handleResponse<T>(res);
 }
 
 // Загрузка файла — FormData/multipart, а НЕ JSON. Content-Type с boundary
 // браузер выставляет сам, поэтому здесь его нельзя задавать вручную.
-async function uploadFile<T>(path: string, formData: FormData): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: 'POST',
-    body: formData,
-    credentials: 'include',
+// XHR (а не fetch) — только у upload.onprogress есть реальный прогресс отправки.
+function uploadFile<T>(
+  path: string,
+  formData: FormData,
+  onProgress?: (percent: number) => void
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}${path}`);
+    xhr.withCredentials = true;
+
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let body: Record<string, unknown> = {};
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      } catch {
+        body = {};
+      }
+
+      if (xhr.status === 401) {
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+        reject(new Error('Не авторизован'));
+        return;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body as T);
+        return;
+      }
+
+      const raw = body.message || body.error || `Ошибка ${xhr.status}`;
+      const dangerous = /SQLSTATE|SQL\[|exception|Trace|stack|Connection:|Database:|Host:/i.test(String(raw));
+      reject(new Error(dangerous ? 'Ошибка сервера. Попробуйте позже' : String(raw)));
+    };
+
+    xhr.onerror = () => reject(new Error('Ошибка сети. Проверьте подключение'));
+    xhr.onabort = () => reject(new Error('Загрузка отменена'));
+
+    xhr.send(formData);
   });
-  return handleResponse<T>(res);
 }
 
 export const api = {
@@ -156,10 +206,10 @@ export const api = {
     request<Order>(`/orders/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ archived }) }),
 
   // Photos
-  uploadPhoto: (orderId: number, file: File) => {
+  uploadPhoto: (orderId: number, file: File, onProgress?: (percent: number) => void) => {
     const formData = new FormData();
     formData.append('photo', file);
-    return uploadFile<Photo>(`/orders/${orderId}/photos`, formData);
+    return uploadFile<Photo>(`/orders/${orderId}/photos`, formData, onProgress);
   },
   deletePhoto: (photoId: number) =>
     request<{ message: string }>(`/orders/photos/${photoId}`, { method: 'DELETE' }),

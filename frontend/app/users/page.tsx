@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import UsersTable from '@/components/UsersTable';
+import UsersTable, { ROLE_LABELS } from '@/components/UsersTable';
 import UserFormModal from '@/components/UserFormModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { api, User } from '@/lib/api';
@@ -53,7 +53,7 @@ export default function UsersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-dvh bg-slate-50">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <h1 className="font-bold text-lg text-slate-900">Пользователи</h1>
@@ -80,14 +80,62 @@ export default function UsersPage() {
         {loading ? (
           <div className="text-center py-10 text-slate-400">Загрузка...</div>
         ) : (
-          <UsersTable
-            users={users}
-            onEdit={(id) => {
-              const u = users.find((x) => x.id === id);
-              if (u) { setEditing(u); setShowForm(true); }
-            }}
-            onDelete={setDeleteId}
-          />
+          <>
+            {/* Десктоп: таблица */}
+            <UsersTable
+              users={users}
+              onEdit={(id) => {
+                const u = users.find((x) => x.id === id);
+                if (u) { setEditing(u); setShowForm(true); }
+              }}
+              onDelete={setDeleteId}
+            />
+
+            {/* Мобильный: карточки (по табличному макету table users 320) */}
+            <div className="lg:hidden space-y-3">
+              {users.length === 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-500 text-sm">
+                  Пользователей не найдено
+                </div>
+              )}
+              {users.map((u) => (
+                <div key={u.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                  <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+                    <span className="font-semibold text-slate-900">{u.login}</span>
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 whitespace-nowrap">
+                      {ROLE_LABELS[u.type_user] ?? `Роль ${u.type_user}`}
+                    </span>
+                  </div>
+
+                  <dl className="divide-y divide-slate-100">
+                    <div className="py-2 text-sm">
+                      <dt className="text-xs text-slate-400">Email:</dt>
+                      <dd className="text-slate-700">{u.email}</dd>
+                    </div>
+                    <div className="py-2 text-sm">
+                      <dt className="text-xs text-slate-400">ФИО:</dt>
+                      <dd className="text-slate-700">{u.fio || '—'}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="flex items-center gap-2 pt-3 mt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => { setEditing(u); setShowForm(true); }}
+                      className="flex-1 min-h-[44px] rounded-lg border border-indigo-600 text-indigo-600 text-sm font-medium hover:bg-indigo-50"
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(u.id)}
+                      className="flex-1 min-h-[44px] rounded-lg border border-red-600 text-red-600 text-sm font-medium hover:bg-red-50"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

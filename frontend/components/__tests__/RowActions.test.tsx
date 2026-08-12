@@ -41,6 +41,13 @@ describe('RowActions', () => {
     expect(screen.getByText('Комментарий')).toBeInTheDocument();
   });
 
+  it('кнопка «Действия» (три точки) имеет touch-таргет не меньше 44px', () => {
+    render(<RowActions order={makeOrder()} role={1} onChanged={() => {}} />);
+    const button = screen.getByRole('button', { name: 'Действия' });
+    expect(button.className).toContain('min-h-[44px]');
+    expect(button.className).toContain('min-w-[44px]');
+  });
+
   it('админ видит в модалке действий пункт Архив', () => {
     render(<RowActions order={makeOrder()} role={1} onChanged={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Действия' }));

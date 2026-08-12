@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { api, Order } from '@/lib/api';
+import Modal from '@/components/Modal';
 
 // Экспорт в CSV (клиентский, без серверных зависимостей)
 function exportCsv(orders: Order[], role: number) {
@@ -61,11 +62,8 @@ export default function ExportModal({ role, onClose }: { role: number; onClose: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal onClose={onClose}>
+      <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Экспорт заказов</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl min-h-[44px] px-2">×</button>
@@ -79,7 +77,7 @@ export default function ExportModal({ role, onClose }: { role: number; onClose: 
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -89,7 +87,7 @@ export default function ExportModal({ role, onClose }: { role: number; onClose: 
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -101,6 +99,6 @@ export default function ExportModal({ role, onClose }: { role: number; onClose: 
           {loading ? 'Экспортирую...' : 'Скачать CSV'}
         </button>
       </div>
-    </div>
+    </Modal>
   );
 }

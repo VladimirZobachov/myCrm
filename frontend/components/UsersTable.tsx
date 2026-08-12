@@ -2,7 +2,7 @@
 
 import { User } from '@/lib/api';
 
-const ROLE_LABELS: Record<number, string> = {
+export const ROLE_LABELS: Record<number, string> = {
   1: 'Администратор',
   2: 'Менеджер',
   3: 'Монтажник',
@@ -10,6 +10,8 @@ const ROLE_LABELS: Record<number, string> = {
 
 /**
  * Таблица пользователей (только для админа, 1:1 с legacy users()).
+ * На мобильном (<lg) скрыта — вместо неё карточки в app/users/page.tsx
+ * (по аналогии с OrdersTable/карточками заказов).
  */
 export default function UsersTable({
   users,
@@ -21,7 +23,7 @@ export default function UsersTable({
   onDelete: (id: number) => void;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+    <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr className="text-left text-slate-500">
@@ -46,13 +48,13 @@ export default function UsersTable({
               <td className="px-4 py-3 whitespace-nowrap">
                 <button
                   onClick={() => onEdit(u.id)}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 min-h-[36px] px-2 rounded hover:bg-indigo-50"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2 rounded hover:bg-indigo-50"
                 >
                   Редактировать
                 </button>
                 <button
                   onClick={() => onDelete(u.id)}
-                  className="text-xs text-red-600 hover:text-red-800 min-h-[36px] px-2 rounded hover:bg-red-50"
+                  className="text-xs text-red-600 hover:text-red-800 min-h-[44px] px-2 rounded hover:bg-red-50"
                 >
                   Удалить
                 </button>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { User, api } from '@/lib/api';
+import Modal from '@/components/Modal';
 
 /**
  * Модалка добавления/редактирования пользователя (только админ).
@@ -59,15 +60,12 @@ export default function UserFormModal({
   }
 
   const inputCls =
-    'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+    'w-full rounded-lg border border-slate-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500';
   const labelCls = 'block text-sm font-medium text-slate-700 mb-1';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal onClose={onClose}>
+      <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">
             {isEdit ? 'Редактировать пользователя' : 'Новый пользователь'}
@@ -161,6 +159,6 @@ export default function UserFormModal({
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import PhotoUploader from '@/components/PhotoUploader';
+import PhotoUploader, { PhotoUploadStatus } from '@/components/PhotoUploader';
 import { Photo } from '@/lib/api';
 
 function makeFile(name: string, type: string, size = 1024): File {
@@ -159,5 +159,101 @@ describe('PhotoUploader', () => {
     const deleteButtons = screen.getAllByRole('button', { name: 'Удалить фото' });
     fireEvent.click(deleteButtons[1]);
     expect(onPendingRemove).toHaveBeenCalledWith(1);
+  });
+
+  it('показывает прогресс-бар и проценты во время загрузки', () => {
+    const file = makeFile('uploading.jpg', 'image/jpeg');
+    const uploadStatus = new Map<File, PhotoUploadStatus>([
+      [file, { status: 'uploading', progress: 42 }],
+    ]);
+
+    render(
+      <PhotoUploader
+        photos={[]}
+        pendingFiles={[file]}
+        uploadStatus={uploadStatus}
+        onFilesAdd={() => {}}
+        onPendingRemove={() => {}}
+        onExistingDelete={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/Загрузка…\s*42%/)).toBeInTheDocument();
+    const progressbar = screen.getByRole('progressbar');
+    expect(progressbar).toHaveAttribute('aria-valuenow', '42');
+    // Пока файл грузится, удалить его нельзя (чтобы не оторвать XHR от UI)
+    expect(screen.getByRole('button', { name: 'Удалить фото' })).toBeDisabled();
+  });
+
+  it('при ошибке показывает «Не загружено» и кнопку «Повторить»', () => {
+    const file = makeFile('failed.jpg', 'image/jpeg');
+    const uploadStatus = new Map<File, PhotoUploadStatus>([
+      [file, { status: 'error', progress: 0, error: 'Ошибка сети' }],
+    ]);
+
+    render(
+      <PhotoUploader
+        photos={[]}
+        pendingFiles={[file]}
+        uploadStatus={uploadStatus}
+        onFilesAdd={() => {}}
+        onPendingRemove={() => {}}
+        onExistingDelete={() => {}}
+        onRetry={() => {}}
+      />
+    );
+
+    expect(screen.getByText('Не загружено')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Повторить' })).toBeInTheDocument();
+  });
+
+  it('клик по «Повторить» вызывает onRetry с тем же файлом (без дубля в очереди)', () => {
+    const file = makeFile('failed.jpg', 'image/jpeg');
+    const uploadStatus = new Map<File, PhotoUploadStatus>([
+      [file, { status: 'error', progress: 0, error: 'Ошибка сети' }],
+    ]);
+    const onRetry = vi.fn();
+    const onFilesAdd = vi.fn();
+
+    render(
+      <PhotoUploader
+        photos={[]}
+        pendingFiles={[file]}
+        uploadStatus={uploadStatus}
+        onFilesAdd={onFilesAdd}
+        onPendingRemove={() => {}}
+        onExistingDelete={() => {}}
+        onRetry={onRetry}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(onRetry).toHaveBeenCalledWith(file);
+    // Повтор — это не «добавление файла»: очередь не должна расти
+    expect(onFilesAdd).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+  });
+
+  it('успешно загруженный файл показывает «Загружено» без кнопки «Повторить»', () => {
+    const file = makeFile('done.jpg', 'image/jpeg');
+    const uploadStatus = new Map<File, PhotoUploadStatus>([
+      [file, { status: 'done', progress: 100 }],
+    ]);
+
+    render(
+      <PhotoUploader
+        photos={[]}
+        pendingFiles={[file]}
+        uploadStatus={uploadStatus}
+        onFilesAdd={() => {}}
+        onPendingRemove={() => {}}
+        onExistingDelete={() => {}}
+      />
+    );
+
+    expect(screen.getByText('Загружено')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Повторить' })).not.toBeInTheDocument();
   });
 });
