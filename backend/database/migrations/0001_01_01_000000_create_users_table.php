@@ -14,14 +14,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->integer('id', false, true);
+            $table->integer('id', true, true); // AUTO_INCREMENT
             $table->string('email', 300);
             $table->string('login', 100);
             $table->string('passwd', 100);
             $table->tinyInteger('type_user');
             $table->string('fio', 500)->default('');
 
-            $table->primary('id');
+            // id — AUTO_INCREMENT, уже PRIMARY KEY (не нужен отдельный $table->primary('id'))
             $table->index('login');
             $table->index('email');
         });

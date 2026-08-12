@@ -136,13 +136,24 @@ class OrderExportController extends Controller
     }
 
     /**
+     * Валидация дат. Принимает ОБА варианта имён (legacy export.php использует
+     * from/to, новый API — sdate/edate). Невалидные даты → 422 (аудит A2:
+     * закрывает SQL-инъекцию через параметры дат).
+     *
      * @return array{sdate?: ?string, edate?: ?string}
      */
     protected function validateDates(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'sdate' => 'nullable|date_format:Y-m-d',
             'edate' => 'nullable|date_format:Y-m-d',
+            'from' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d',
         ]);
+
+        return [
+            'sdate' => $validated['sdate'] ?? $validated['from'] ?? null,
+            'edate' => $validated['edate'] ?? $validated['to'] ?? null,
+        ];
     }
 }

@@ -20,4 +20,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Неавторизованный доступ → 401 JSON, а НЕ redirect на route('login') → 500
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            return null;
+        });
+
+        // Нет маршрута → 404 JSON (а не RouteNotFoundException со стектрейсом)
+        $exceptions->render(function (\Symfony\Component\Routing\Exception\RouteNotFoundException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'Not Found.'], 404);
+            }
+            return null;
+        });
     })->create();

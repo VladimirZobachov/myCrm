@@ -26,6 +26,12 @@ Route::get('/health', function () {
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 
+// Named route 'login' — сюда Laravel редиректит неавторизованных (route('login')).
+// Возвращаем 401 JSON, а не HTML/404 (фикс бага #12: было 500 "Route [login] not defined").
+Route::get('/login', function () {
+    return response()->json(['message' => 'Unauthenticated.'], 401);
+})->name('login');
+
 // Auth (требуют JWT)
 Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);

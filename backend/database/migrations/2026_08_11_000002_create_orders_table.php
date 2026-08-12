@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->integer('id', false, true);
+            $table->integer('id', true, true); // AUTO_INCREMENT (legacy-схема: id без default → 500 при INSERT)
             $table->dateTime('date_create')->useCurrent();
             $table->date('date')->nullable();
             $table->string('trc', 200);
@@ -35,7 +35,7 @@ return new class extends Migration
             $table->tinyInteger('is_archived')->default(0);
             $table->string('comment_manager', 500)->default('');
 
-            $table->primary('id');
+            // id — AUTO_INCREMENT, уже PRIMARY KEY (не нужен отдельный $table->primary('id'))
             $table->index('trc');
             $table->index('date');
         });

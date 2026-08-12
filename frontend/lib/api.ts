@@ -92,7 +92,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || body.error || `Ошибка ${res.status}`);
+    const raw = body.message || body.error || `Ошибка ${res.status}`;
+    // Не светить служебную информацию (SQL, стектрейсы, имена БД/хостов)
+    const dangerous = /SQLSTATE|SQL\[|exception|Trace|stack|Connection:|Database:|Host:/i.test(String(raw));
+    throw new Error(dangerous ? 'Ошибка сервера. Попробуйте позже' : raw);
   }
 
   return res.json();
