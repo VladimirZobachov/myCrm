@@ -101,9 +101,9 @@ const COLUMNS: Column[] = [
     ],
     visibleFor: [1, 2, 3],
     render: (o) => (
-      <div className="max-w-[520px]">
-        <div className="text-slate-600 truncate">{o.type_work}</div>
-        {o.brand && <div className="text-xs text-slate-400 mt-0.5 truncate">{o.brand}</div>}
+      <div className="min-w-[160px] max-w-[280px]">
+        <div className="text-slate-600 whitespace-normal break-words">{o.type_work}</div>
+        {o.brand && <div className="text-xs text-slate-400 mt-0.5 whitespace-normal break-words">{o.brand}</div>}
       </div>
     ),
   },
@@ -163,6 +163,11 @@ export default function OrdersTable({
 }) {
   const visible = COLUMNS.filter((c) => c.visibleFor.includes(role));
   const [sortField, sortDir] = sort.split('|') as [string, 'ASC' | 'DESC'];
+  // Второстепенные колонки (короткое содержимое) получают более узкий
+  // паддинг, чтобы освободить место колонке «Вид работ / Бренд» и не
+  // выходить за max-w-7xl (1280px) — без этого таблица требовала
+  // горизонтального скролла.
+  const compactPad = (key: string) => (['importance', 'photo', 'where_print', 'status'].includes(key) ? 'px-2' : 'px-4');
 
   return (
     <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
@@ -170,7 +175,7 @@ export default function OrdersTable({
         <thead className="border-b border-slate-200">
           <tr className="text-left text-slate-500">
             {visible.map((c) => (
-              <th key={c.key} className={`px-4 py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' ? 'w-10' : ''}`}>
+              <th key={c.key} className={`${compactPad(c.key)} py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' ? 'w-10' : ''}`}>
                 <div className="flex flex-col gap-1">
                   {c.headers.map((h) => (
                     <span
@@ -194,7 +199,7 @@ export default function OrdersTable({
               className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors align-top"
             >
               {visible.map((c) => (
-                <td key={c.key} className={`px-4 py-3 ${c.key === 'actions' ? 'whitespace-nowrap' : ''}`}>
+                <td key={c.key} className={`${compactPad(c.key)} py-3 ${c.key === 'actions' ? 'whitespace-nowrap' : ''}`}>
                   {c.key === 'actions'
                     ? <RowActions order={o} role={role} onChanged={onChanged} />
                     : c.render(o, role)}

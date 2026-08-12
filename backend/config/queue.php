@@ -40,6 +40,11 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
+            // Должно быть больше, чем время выполнения одной попытки джобы,
+            // иначе queue:work сочтёт "зависшую" джобу потерянной и запустит
+            // её повторно параллельно с ещё выполняющейся. Mail-Job'ы
+            // ограничены --timeout=60 в deploy/supervisor/queue.conf,
+            // поэтому здесь запас 90с (задача #45).
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
             'after_commit' => false,
         ],

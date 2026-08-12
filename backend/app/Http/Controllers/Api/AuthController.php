@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -72,6 +73,8 @@ class AuthController extends Controller
             'passwd' => Hash::make($data['passwd']),
             'type_user' => $data['type_user'],
         ]);
+
+        WelcomeMail::dispatch($user->id);
 
         $token = auth('api')->login($user);
 

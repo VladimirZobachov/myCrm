@@ -5,6 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
+use App\Jobs\CommentChangedMail;
+use App\Jobs\MounterAssignedMail;
+use App\Jobs\OrderCreatedMail;
+use App\Jobs\OrderUpdatedMail;
+use App\Jobs\StatusChangedMail;
 use App\Models\Order;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -76,6 +81,8 @@ class OrderController extends Controller
 
         $order = Order::create($data);
 
+        OrderCreatedMail::dispatch($order->id);
+
         return response()->json($order->load(['createdBy', 'createdFor']), 201);
     }
 
@@ -120,7 +127,19 @@ class OrderController extends Controller
             $data['created_for'] = $user->id;
         }
 
+        $previousCreatedFor = $order->created_for;
+
         $order->update($data);
+
+        if (array_key_exists('created_for', $data) && $data['created_for'] && $data['created_for'] !== $previousCreatedFor) {
+            MounterAssignedMail::dispatch($order->id, (int) $data['created_for']);
+        }
+
+        $changes = $order->getChanges();
+        unset($changes['created_for']);
+        if ($changes) {
+            OrderUpdatedMail::dispatch($order->id, $user->id, array_keys($changes));
+        }
 
         return response()->json($order->fresh()->load(['createdBy', 'createdFor']));
     }
@@ -162,6 +181,8 @@ class OrderController extends Controller
         }
         $order->save();
 
+        CommentChangedMail::dispatch($order->id, $data['comment'], $user->id);
+
         return response()->json($order->fresh()->load(['createdBy', 'createdFor']));
     }
 
@@ -186,6 +207,8 @@ class OrderController extends Controller
 
         $order->status = $data['status'];
         $order->save();
+
+        StatusChangedMail::dispatch($order->id, $order->status);
 
         return response()->json($order->fresh()->load(['createdBy', 'createdFor']));
     }
