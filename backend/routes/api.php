@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderExportController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MeController;
 
@@ -29,6 +30,16 @@ Route::post('/auth/register', [AuthController::class, 'register']);
 Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+
+    // Экспорт заявок в XLS — ДОЛЖЕН стоять перед apiResource('orders'),
+    // иначе orders/{order} перехватит /orders/export как id.
+    Route::get('/orders/export', OrderExportController::class);
+
+    // Асинхронная генерация XLS-отчёта в очереди (GenerateExportJob) — тоже
+    // перед apiResource('orders'), по той же причине.
+    Route::post('/orders/export/job', [OrderExportController::class, 'storeJob']);
+    Route::get('/orders/export/job/{id}', [OrderExportController::class, 'showJob']);
+    Route::get('/orders/export/job/{id}/download', [OrderExportController::class, 'downloadJob']);
 
     Route::apiResource('orders', OrderController::class);
     Route::patch('/orders/{order}/comment', [OrderController::class, 'updateComment']);
