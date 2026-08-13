@@ -6,6 +6,17 @@ import OrdersTable from '@/components/OrdersTable';
 import ExportModal from '@/components/ExportModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MobileOrderCard from '@/components/MobileOrderCard';
+import { mergeManualOrder } from '@/lib/orderPositions';
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 function AccountIcon() {
   return (
@@ -75,37 +86,84 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1);
   const [archived, setArchived] = useState(false);
   const [sort, setSort] = useState('date_create|DESC');
+  // Ручной (drag-and-drop) порядок применяется по умолчанию при загрузке
+  // (запрос без ?sort= — бэкенд сам подставит order_positions пользователя).
+  // Клик по заголовку колонки включает обычную сортировку до перезагрузки
+  // страницы (см. OrderController::index).
+  const [sortExplicit, setSortExplicit] = useState(false);
+  const [positions, setPositions] = useState<number[] | null>(null);
   const [role, setRole] = useState<number>(1); // из /auth/me
   const [me, setMe] = useState<User | null>(null);
   const [showExport, setShowExport] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  useEffect(() => {
+  function fetchOrders() {
     setLoading(true);
     setError('');
+    const params: Record<string, string | number | boolean> = { page, archived: archived ? 1 : 0 };
+    if (sortExplicit) params.sort = sort;
+    return api
+      .orders(params)
+      .then(setData)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
     api
       .me()
       .then((res) => { setRole(res.user.type_user); setMe(res.user); })
       .catch(() => {});
     api
-      .orders({ page, archived: archived ? 1 : 0, sort })
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [page, archived, sort]);
+      .getOrderPositions()
+      .then((res) => setPositions(res.order_ids))
+      .catch(() => {});
+    fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, archived, sort, sortExplicit]);
 
   function toggleSort(field: string) {
     const [cur, dir] = sort.split('|');
     setSort(`${field}|${cur === field && dir === 'DESC' ? 'ASC' : 'DESC'}`);
+    setSortExplicit(true);
   }
 
   function reload() {
-    setLoading(true);
-    api
-      .orders({ page, archived: archived ? 1 : 0, sort })
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    fetchOrders();
+  }
+
+  // Drag-and-drop: пользователь переставил заявки на текущей странице.
+  // Обновляем список локально (оптимистично) и сохраняем в БД полный
+  // ручной порядок (см. mergeManualOrder — вклеивает страницу в ранее
+  // известный порядок, не теряя позиции заявок с других страниц).
+  function handleReorder(newPageOrderIds: number[]) {
+    if (!data) return;
+
+    const byId = new Map(data.data.map((o) => [o.id, o]));
+    const reordered = newPageOrderIds.map((id) => byId.get(id)).filter((o): o is Order => !!o);
+    setData({ ...data, data: reordered });
+
+    const merged = mergeManualOrder(positions, newPageOrderIds);
+    setPositions(merged);
+    setSortExplicit(false);
+
+    api.saveOrderPositions(merged).catch(() => {});
+  }
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleMobileDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!data || !over || active.id === over.id) return;
+
+    const oldIndex = data.data.findIndex((o) => o.id === active.id);
+    const newIndex = data.data.findIndex((o) => o.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    handleReorder(arrayMove(data.data, oldIndex, newIndex).map((o) => o.id));
   }
 
   async function doLogout() {
@@ -221,18 +279,23 @@ export default function OrdersPage() {
         {data && !loading && (
           <>
             {/* Десктоп: таблица (ролевые колонки) */}
-            <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} />
+            <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} onReorder={handleReorder} />
 
-            {/* Мобильный: карточки-аккордеон (свёрнуты до № + важность, тап разворачивает) */}
+            {/* Мобильный: карточки-аккордеон (свёрнуты до № + важность, тап разворачивает).
+                Перетаскивание за ручку сохраняет тот же ручной порядок, что и на десктопе. */}
             <div className="lg:hidden space-y-3">
               {data.data.length === 0 && (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-500 text-sm">
                   Заявок не найдено
                 </div>
               )}
-              {data.data.map((o) => (
-                <MobileOrderCard key={o.id} order={o} role={role} onChanged={reload} />
-              ))}
+              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleMobileDragEnd}>
+                <SortableContext items={data.data.map((o) => o.id)} strategy={verticalListSortingStrategy}>
+                  {data.data.map((o) => (
+                    <MobileOrderCard key={o.id} order={o} role={role} onChanged={reload} />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
 
             {/* Пагинация: 1 2 3 ... Вперед */}

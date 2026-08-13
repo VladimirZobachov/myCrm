@@ -11,6 +11,7 @@ use App\Jobs\OrderCreatedMail;
 use App\Jobs\OrderUpdatedMail;
 use App\Jobs\StatusChangedMail;
 use App\Models\Order;
+use App\Models\OrderPosition;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -45,8 +46,27 @@ class OrderController extends Controller
             $query->where('status', $request->integer('status'));
         }
 
+        // Ручной (drag-and-drop) порядок применяется только пока пользователь
+        // не запросил обычную сортировку явно (клик по заголовку колонки
+        // всегда передаёт ?sort=...).
+        $hasManualOrder = !$request->has('sort')
+            && OrderPosition::where('user_id', $user->id)->exists();
+
+        if ($hasManualOrder) {
+            $query
+                ->leftJoin('order_positions', function ($join) use ($user) {
+                    $join->on('orders.id', '=', 'order_positions.order_id')
+                        ->where('order_positions.user_id', '=', $user->id);
+                })
+                ->select('orders.*')
+                ->orderByRaw('order_positions.position is null')
+                ->orderBy('order_positions.position')
+                ->orderBy('orders.date_create', 'desc');
+        } else {
+            $query->orderBy($sortBy, $sortDir);
+        }
+
         $orders = $query
-            ->orderBy($sortBy, $sortDir)
             ->paginate(50)
             ->withQueryString();
 

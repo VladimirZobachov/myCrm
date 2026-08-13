@@ -6,6 +6,23 @@ import { importanceBadge } from '@/lib/constants';
 import RowActions from '@/components/RowActions';
 import PhotoGallery from '@/components/PhotoGallery';
 import StatusQuickChange from '@/components/StatusQuickChange';
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Ролевая видимость колонок (1:1 с legacy index.php table_headers)
 // type_user: 1=админ, 2=менеджер, 3=монтажник
@@ -20,6 +37,8 @@ import StatusQuickChange from '@/components/StatusQuickChange';
 // по уточнённому прототипу (Figma Frame 286+291, 272+292), чтобы убрать
 // горизонтальный скролл. Заголовок при этом хранит обе сортируемые метки
 // (каждая кликается отдельно), см. HeaderPart.
+// «drag» — ручка drag-and-drop для ручного порядка заявок (сохраняется в
+// БД для каждого пользователя, задача 13.08.2026).
 interface HeaderPart {
   key: string;
   label: string;
@@ -56,7 +75,24 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'ASC' | 'DESC' }) {
   );
 }
 
+function DragHandleIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 20 20" className="size-4">
+      <circle cx="7" cy="5" r="1.3" fill="currentColor" />
+      <circle cx="13" cy="5" r="1.3" fill="currentColor" />
+      <circle cx="7" cy="10" r="1.3" fill="currentColor" />
+      <circle cx="13" cy="10" r="1.3" fill="currentColor" />
+      <circle cx="7" cy="15" r="1.3" fill="currentColor" />
+      <circle cx="13" cy="15" r="1.3" fill="currentColor" />
+    </svg>
+  );
+}
+
 const COLUMNS: Column[] = [
+  {
+    key: 'drag', headers: [], visibleFor: [1, 2, 3],
+    render: () => null, // рендерится отдельно в SortableRow — нужны listeners из useSortable
+  },
   {
     key: 'actions', headers: [], visibleFor: [1, 2, 3],
     render: () => null, // рендерится отдельно в tbody — нужен role и onChanged
@@ -145,18 +181,71 @@ const COLUMNS: Column[] = [
   },
 ];
 
+function SortableRow({
+  order: o,
+  visible,
+  role,
+  onChanged,
+  compactPad,
+}: {
+  order: Order;
+  visible: Column[];
+  role: number;
+  onChanged: () => void;
+  compactPad: (key: string) => string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: o.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors align-top"
+    >
+      {visible.map((c) => (
+        <td key={c.key} className={`${compactPad(c.key)} py-3 ${c.key === 'actions' || c.key === 'drag' ? 'whitespace-nowrap' : ''}`}>
+          {c.key === 'drag' ? (
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              aria-label={`Перетащить заявку №${o.id}`}
+              className="cursor-grab active:cursor-grabbing flex items-center justify-center min-h-[32px] min-w-[32px] text-slate-300 hover:text-slate-500 touch-none"
+            >
+              <DragHandleIcon />
+            </button>
+          ) : c.key === 'actions' ? (
+            <RowActions order={o} role={role} onChanged={onChanged} />
+          ) : c.key === 'status' ? (
+            <StatusQuickChange order={o} onChanged={onChanged} />
+          ) : (
+            c.render(o, role)
+          )}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
 export default function OrdersTable({
   orders,
   role,
   sort,
   onSort,
   onChanged,
+  onReorder,
 }: {
   orders: Order[];
   role: number;
   sort: string;
   onSort: (field: string) => void;
   onChanged: () => void;
+  onReorder?: (orderIds: number[]) => void;
 }) {
   const visible = COLUMNS.filter((c) => c.visibleFor.includes(role));
   const [sortField, sortDir] = sort.split('|') as [string, 'ASC' | 'DESC'];
@@ -164,7 +253,23 @@ export default function OrdersTable({
   // паддинг, чтобы освободить место колонке «Вид работ / Бренд» и не
   // выходить за max-w-7xl (1280px) — без этого таблица требовала
   // горизонтального скролла.
-  const compactPad = (key: string) => (['importance', 'photo', 'where_print', 'status'].includes(key) ? 'px-2' : 'px-4');
+  const compactPad = (key: string) => (['importance', 'photo', 'where_print', 'status', 'drag'].includes(key) ? 'px-2' : 'px-4');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!onReorder || !over || active.id === over.id) return;
+
+    const oldIndex = orders.findIndex((o) => o.id === active.id);
+    const newIndex = orders.findIndex((o) => o.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    onReorder(arrayMove(orders, oldIndex, newIndex).map((o) => o.id));
+  }
 
   return (
     <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
@@ -172,7 +277,7 @@ export default function OrdersTable({
         <thead className="border-b border-slate-200">
           <tr className="text-left text-slate-500">
             {visible.map((c) => (
-              <th key={c.key} className={`${compactPad(c.key)} py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' ? 'w-10' : ''}`}>
+              <th key={c.key} className={`${compactPad(c.key)} py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' || c.key === 'drag' ? 'w-10' : ''}`}>
                 <div className="flex flex-col gap-1">
                   {c.headers.map((h) => (
                     <span
@@ -189,24 +294,15 @@ export default function OrdersTable({
             ))}
           </tr>
         </thead>
-        <tbody>
-          {orders.map((o) => (
-            <tr
-              key={o.id}
-              className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors align-top"
-            >
-              {visible.map((c) => (
-                <td key={c.key} className={`${compactPad(c.key)} py-3 ${c.key === 'actions' ? 'whitespace-nowrap' : ''}`}>
-                  {c.key === 'actions'
-                    ? <RowActions order={o} role={role} onChanged={onChanged} />
-                    : c.key === 'status'
-                    ? <StatusQuickChange order={o} onChanged={onChanged} />
-                    : c.render(o, role)}
-                </td>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orders.map((o) => o.id)} strategy={verticalListSortingStrategy}>
+            <tbody>
+              {orders.map((o) => (
+                <SortableRow key={o.id} order={o} visible={visible} role={role} onChanged={onChanged} compactPad={compactPad} />
               ))}
-            </tr>
-          ))}
-        </tbody>
+            </tbody>
+          </SortableContext>
+        </DndContext>
       </table>
     </div>
   );

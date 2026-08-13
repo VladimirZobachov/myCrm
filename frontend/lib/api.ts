@@ -206,6 +206,11 @@ export const api = {
     request<Order>(`/orders/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ archived }) }),
   deleteOrder: (id: number) => request<{ message: string }>(`/orders/${id}`, { method: 'DELETE' }),
 
+  // Ручной порядок заявок (drag-and-drop, персональный для пользователя)
+  getOrderPositions: () => request<{ order_ids: number[] | null }>('/orders/positions'),
+  saveOrderPositions: (orderIds: number[]) =>
+    request<{ order_ids: number[] }>('/orders/positions', { method: 'PUT', body: JSON.stringify({ order_ids: orderIds }) }),
+
   // Photos
   uploadPhoto: (orderId: number, file: File, onProgress?: (percent: number) => void) => {
     const formData = new FormData();

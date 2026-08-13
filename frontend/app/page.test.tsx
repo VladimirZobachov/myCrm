@@ -4,7 +4,12 @@ import OrdersPage from './page';
 
 function mockOrdersFetch(ordersImpl: () => Promise<unknown>) {
   (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((url: unknown) => {
-    if (String(url).includes('/orders')) return ordersImpl();
+    const u = String(url);
+    // /orders/positions — ручной порядок, отдельный запрос (глотается компонентом)
+    if (u.includes('/orders/positions')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ order_ids: [] }) });
+    }
+    if (u.includes('/orders')) return ordersImpl();
     // /auth/me — не относится к загрузке заявок, ошибка тут проглатывается компонентом
     return Promise.reject(new TypeError('Failed to fetch'));
   });

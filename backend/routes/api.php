@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PhotoController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\MigrationMetricsController;
+use App\Http\Controllers\Api\OrderPositionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,6 +53,11 @@ Route::middleware('auth:api')->group(function () {
     // Фото заявок — DELETE стоит ПЕРЕД apiResource('orders'), чтобы
     // /orders/photos/{photo} не путался с destroy() из apiResource (/orders/{order}).
     Route::delete('/orders/photos/{photo}', [PhotoController::class, 'destroy']);
+
+    // Ручной (drag-and-drop) порядок заявок — тоже перед apiResource('orders'),
+    // иначе /orders/{order} перехватит /orders/positions как id.
+    Route::get('/orders/positions', [OrderPositionController::class, 'show']);
+    Route::put('/orders/positions', [OrderPositionController::class, 'update']);
 
     Route::apiResource('orders', OrderController::class);
     Route::post('/orders/{order}/photos', [PhotoController::class, 'store']);

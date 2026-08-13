@@ -66,4 +66,9 @@ describe('MobileOrderCard — аккордеон мобильной карточ
     expect(screen.queryByText('Монтаж баннера')).not.toBeInTheDocument();
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('есть ручка drag-and-drop для ручного порядка карточек', () => {
+    render(<MobileOrderCard order={makeOrder()} role={1} onChanged={onChanged} />);
+    expect(screen.getByRole('button', { name: 'Изменить порядок заявки 42' })).toBeInTheDocument();
+  });
 });

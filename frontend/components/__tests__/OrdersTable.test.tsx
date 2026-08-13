@@ -125,4 +125,19 @@ describe('OrdersTable — ролевая видимость колонок', () 
     screen.getByText('ТРЦ').click();
     expect(onSort).toHaveBeenCalledWith('trc');
   });
+
+  it('у каждой строки есть ручка drag-and-drop для ручного порядка', () => {
+    render(
+      <OrdersTable
+        orders={[makeOrder({ id: 1 }), makeOrder({ id: 2 })]}
+        role={1}
+        sort="date_create|DESC"
+        onSort={onSort}
+        onChanged={onChanged}
+        onReorder={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Перетащить заявку №1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Перетащить заявку №2' })).toBeInTheDocument();
+  });
 });
