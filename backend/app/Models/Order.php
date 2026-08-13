@@ -47,6 +47,37 @@ class Order extends Model
         ];
     }
 
+    /**
+     * Мутаторы: Laravel ConvertEmptyStringsToNull превращает "" в null,
+     * а колонки importance_other/photo/comment_manager NOT NULL без default
+     * (реальная схема). Возвращаем "" вместо null, иначе UPDATE падает с
+     * SQLSTATE 1048 "Column cannot be null" (баг на стенде 13.08.2026).
+     */
+    public function setImportanceOtherAttribute(?string $value): void
+    {
+        $this->attributes['importance_other'] = $value ?? '';
+    }
+
+    public function setPhotoAttribute(?string $value): void
+    {
+        $this->attributes['photo'] = $value ?? '';
+    }
+
+    public function setCommentManagerAttribute(?string $value): void
+    {
+        $this->attributes['comment_manager'] = $value ?? '';
+    }
+
+    public function setTrcOtherAttribute(?string $value): void
+    {
+        $this->attributes['trc_other'] = $value ?? '';
+    }
+
+    public function setWhereOtherAttribute(?string $value): void
+    {
+        $this->attributes['where_other'] = $value ?? '';
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

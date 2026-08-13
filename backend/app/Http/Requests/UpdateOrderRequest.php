@@ -22,7 +22,7 @@ class UpdateOrderRequest extends FormRequest
             'brand' => 'sometimes|string|max:255',
             'where_print' => 'sometimes|string|max:255',
             'where_other' => 'nullable|required_if:where_print,Другое|string|max:255',
-            'photo' => 'sometimes|string',
+            'photo' => 'sometimes|nullable|string',
             'price' => 'sometimes|numeric|min:0',
             'price_admin' => 'sometimes|numeric|min:0',
             'importance' => 'sometimes|string|max:255',
