@@ -2,14 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { api, Order, Paginated, User } from '@/lib/api';
-import { formatDate } from '@/components/StatusBadge';
-import { importanceBadge } from '@/lib/constants';
 import OrdersTable from '@/components/OrdersTable';
 import ExportModal from '@/components/ExportModal';
 import ConfirmModal from '@/components/ConfirmModal';
-import RowActions from '@/components/RowActions';
-import PhotoGallery from '@/components/PhotoGallery';
-import StatusQuickChange from '@/components/StatusQuickChange';
+import MobileOrderCard from '@/components/MobileOrderCard';
 
 function AccountIcon() {
   return (
@@ -227,66 +223,16 @@ export default function OrdersPage() {
             {/* Десктоп: таблица (ролевые колонки) */}
             <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} />
 
-            {/* Мобильный: карточки (по orders-mobile.png) */}
+            {/* Мобильный: карточки-аккордеон (свёрнуты до № + важность, тап разворачивает) */}
             <div className="lg:hidden space-y-3">
               {data.data.length === 0 && (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-500 text-sm">
                   Заявок не найдено
                 </div>
               )}
-              {data.data.map((o) => {
-                const imp = importanceBadge(o.importance);
-                const rows: [string, React.ReactNode][] = [
-                  ['ТРЦ:', <span key="trc" className="font-semibold text-slate-900">{o.trc}</span>],
-                  ['Бренд:', o.brand],
-                  ['Вид работ:', o.type_work],
-                  ['Менеджер:', o.created_by?.fio || '—'],
-                  ...(role === 1 ? ([['Монтажник:', o.created_for?.fio || '—']] as [string, React.ReactNode][]) : []),
-                  ['Где печать:', o.where_print],
-                  ['Фото:', <PhotoGallery key="photo" photos={o.photos} legacyPhoto={o.photo} variant="compact" max={3} />],
-                  ['Комментарий монтажнику:', o.comments || '—'],
-                ];
-                return (
-                  <div key={o.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-                      <div className="text-xs text-slate-400">
-                        <span className="font-medium text-slate-600">№{o.id}</span> {formatDate(o.date_create)}
-                      </div>
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap ${imp.cls}`}>
-                        {imp.label}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 py-3 border-b border-slate-100">
-                      <div>
-                        <div className="text-xs text-slate-400">Дата монтажа:</div>
-                        <div className="text-slate-900 font-medium">{formatDate(o.date)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400">Стоимость:</div>
-                        <div className="text-slate-900 font-medium tabular-nums">
-                          {o.price}
-                          {role === 1 && <span className="text-xs text-slate-400 font-normal"> адм. {o.price_admin}</span>}
-                        </div>
-                      </div>
-                    </div>
-
-                    <dl className="divide-y divide-slate-100">
-                      {rows.map(([label, value]) => (
-                        <div key={label} className="py-2 text-sm">
-                          <dt className="text-xs text-slate-400">{label}</dt>
-                          <dd className="text-slate-700">{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-
-                    <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-100">
-                      <RowActions order={o} role={role} onChanged={reload} />
-                      <StatusQuickChange order={o} onChanged={reload} />
-                    </div>
-                  </div>
-                );
-              })}
+              {data.data.map((o) => (
+                <MobileOrderCard key={o.id} order={o} role={role} onChanged={reload} />
+              ))}
             </div>
 
             {/* Пагинация: 1 2 3 ... Вперед */}
