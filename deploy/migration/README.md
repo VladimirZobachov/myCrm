@@ -64,9 +64,16 @@
 cd /tmp/mycrm/backend
 php artisan migrate --force
 
-# 2. Проверить, что новая система работает (health)
+# 2. ВАЖНО: symlink для фото (иначе Storage::url не отдаёт файлы — баг 13.08.2026)
+php artisan storage:link
+
+# 3. ВАЖНО: APP_URL в .env = реальный адрес API (не localhost!)
+#    APP_URL=http://95.81.79.29:8000  (или прод-домен)
+
+# 4. Проверить, что новая система работает (health)
 curl http://127.0.0.1:8000/api/health
 curl http://127.0.0.1:3000/            # фронтенд
+# 5. Проверить отдачу фото: curl http://API/storage/... → 200
 ```
 
 ### Шаг 2. Подключить reverse-proxy
