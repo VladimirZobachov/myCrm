@@ -36,12 +36,12 @@ describe('OrdersTable — ролевая видимость колонок', () 
   it('колонка «№» объединена с датой создания заявки', () => {
     render(<OrdersTable orders={[makeOrder({ id: 87 })]} role={1} sort="date_create|DESC" onSort={onSort} onChanged={onChanged} />);
     expect(screen.getByText('№87')).toBeInTheDocument();
-    expect(screen.getByText('2026-08-11')).toBeInTheDocument();
+    expect(screen.getByText('11.08.2026')).toBeInTheDocument();
   });
 
   it('колонка «Дата монтажа» объединена с ТРЦ, обе подписи сортируются независимо', () => {
     render(<OrdersTable orders={[makeOrder()]} role={1} sort="date_create|DESC" onSort={onSort} onChanged={onChanged} />);
-    expect(screen.getByText('2026-08-12')).toBeInTheDocument();
+    expect(screen.getByText('12.08.2026')).toBeInTheDocument();
     expect(screen.getByText('Гринвич')).toBeInTheDocument();
 
     screen.getByText('Дата монтажа').click();

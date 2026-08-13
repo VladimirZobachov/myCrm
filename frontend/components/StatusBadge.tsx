@@ -45,5 +45,8 @@ export function StatusBadge({
 
 export function formatDate(d: string): string {
   if (!d) return '';
-  return d.slice(0, 10);
+  // ISO (YYYY-MM-DD или с временем) → ДД.ММ.ГГГГ
+  const parts = d.slice(0, 10).split('-');
+  if (parts.length !== 3) return d.slice(0, 10);
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }

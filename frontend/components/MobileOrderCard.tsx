@@ -2,22 +2,23 @@
 
 import { useState } from 'react';
 import { Order } from '@/lib/api';
-import { formatDate } from '@/components/StatusBadge';
+import { StatusBadge, formatDate } from '@/components/StatusBadge';
 import { importanceBadge } from '@/lib/constants';
 import RowActions from '@/components/RowActions';
 import PhotoGallery from '@/components/PhotoGallery';
 import StatusQuickChange from '@/components/StatusQuickChange';
 
 /**
- * Мобильная карточка заказа — аккордеон (по требованию клиента, 13.08.2026):
- * свёрнута до одной строки (№ + важность), тап разворачивает все поля.
- * Каждая карточка хранит своё состояние независимо (не «одна открытая на странице»).
+ * Мобильная карточка заказа — аккордеон (по требованию клиента, 13.08.2026).
+ * Свёрнутая строка (обновлено 13.08.2026): дата монтажа, ТРЦ, цена, статус — вместо номера заявки.
+ * Тап разворачивает все поля. Каждая карточка хранит своё состояние независимо.
  */
 export default function MobileOrderCard({ order: o, role, onChanged }: { order: Order; role: number; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
   const imp = importanceBadge(o.importance);
 
   const rows: [string, React.ReactNode][] = [
+    ['Важность:', <span key="imp" className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap ${imp.cls}`}>{imp.label}</span>],
     ['Дата создания:', formatDate(o.date_create)],
     ['ТРЦ:', <span key="trc" className="font-semibold text-slate-900">{o.trc}</span>],
     ['Бренд:', o.brand],
@@ -35,21 +36,22 @@ export default function MobileOrderCard({ order: o, role, onChanged }: { order: 
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
+        aria-label={`Заявка №${o.id}`}
         className="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 text-left"
       >
-        <span className="text-sm font-medium text-slate-600">№{o.id}</span>
-        <span className="flex items-center gap-2">
-          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap ${imp.cls}`}>
-            {imp.label}
-          </span>
-          <svg
-            aria-hidden
-            viewBox="0 0 20 20"
-            className={`size-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          >
-            <path d="M5.5 7.5l4.5 4.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+          <span className="text-sm font-semibold text-slate-900 whitespace-nowrap">{formatDate(o.date)}</span>
+          <span className="text-sm text-slate-600 truncate">{o.trc}</span>
+          <span className="text-sm font-medium text-slate-900 tabular-nums whitespace-nowrap">{o.price}</span>
+          <StatusBadge status={o.status} archived={o.is_archived} />
         </span>
+        <svg
+          aria-hidden
+          viewBox="0 0 20 20"
+          className={`size-4 text-slate-400 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        >
+          <path d="M5.5 7.5l4.5 4.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
 
       {open && (

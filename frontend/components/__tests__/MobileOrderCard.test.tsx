@@ -32,11 +32,13 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
 describe('MobileOrderCard — аккордеон мобильной карточки заказа', () => {
   const onChanged = vi.fn();
 
-  it('изначально свёрнута: показывает № и важность, но не показывает вид работ/бренд', () => {
+  it('изначально свёрнута: показывает дату монтажа, ТРЦ, цену и статус, но не показывает вид работ/бренд', () => {
     render(<MobileOrderCard order={makeOrder()} role={1} onChanged={onChanged} />);
 
-    expect(screen.getByText('№42')).toBeInTheDocument();
-    expect(screen.getByText('Текущая 48 ч')).toBeInTheDocument();
+    expect(screen.getByText('12.08.2026')).toBeInTheDocument();
+    expect(screen.getByText('Гринвич')).toBeInTheDocument();
+    expect(screen.getByText('5000')).toBeInTheDocument();
+    expect(screen.getByText('ждет')).toBeInTheDocument();
     expect(screen.queryByText('Монтаж баннера')).not.toBeInTheDocument();
     expect(screen.queryByText('Тестовый бренд')).not.toBeInTheDocument();
 

@@ -37,7 +37,7 @@ describe('StatusBadge', () => {
 
 describe('formatDate', () => {
   it('обрезает ISO до даты', () => {
-    expect(formatDate('2026-08-11T12:00:00.000000Z')).toBe('2026-08-11');
+    expect(formatDate('2026-08-11T12:00:00.000000Z')).toBe('11.08.2026');
   });
 
   it('пустая строка → пусто', () => {
@@ -45,6 +45,6 @@ describe('formatDate', () => {
   });
 
   it('уже дата — остаётся', () => {
-    expect(formatDate('2026-08-11')).toBe('2026-08-11');
+    expect(formatDate('2026-08-11')).toBe('11.08.2026');
   });
 });
