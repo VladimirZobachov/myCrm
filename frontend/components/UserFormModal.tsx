@@ -60,7 +60,7 @@ export default function UserFormModal({
   }
 
   const inputCls =
-    'w-full rounded-lg border border-slate-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500';
+    'w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500';
   const labelCls = 'block text-sm font-medium text-slate-700 mb-1';
 
   return (

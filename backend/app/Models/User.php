@@ -22,6 +22,7 @@ class User extends Authenticatable implements JWTSubject
         'fio',
         'passwd',
         'type_user',
+        'migrated_to_v2',
     ];
 
     protected $hidden = [
@@ -42,6 +43,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'type_user' => 'integer',
+            'migrated_to_v2' => 'boolean',
         ];
     }
 
@@ -82,5 +84,20 @@ class User extends Authenticatable implements JWTSubject
     public function isInstaller(): bool
     {
         return (int) $this->type_user === 3;
+    }
+
+    public function isMigratedToV2(): bool
+    {
+        return (bool) $this->migrated_to_v2;
+    }
+
+    public function scopeMigrated($query)
+    {
+        return $query->where('migrated_to_v2', 1);
+    }
+
+    public function scopeNotMigrated($query)
+    {
+        return $query->where('migrated_to_v2', 0);
     }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { User } from '@/lib/api';
+import UserRowActions from '@/components/UserRowActions';
 
 export const ROLE_LABELS: Record<number, string> = {
   1: 'Администратор',
@@ -46,18 +47,7 @@ export default function UsersTable({
                 </span>
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
-                <button
-                  onClick={() => onEdit(u.id)}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 min-h-[44px] px-2 rounded hover:bg-indigo-50"
-                >
-                  Редактировать
-                </button>
-                <button
-                  onClick={() => onDelete(u.id)}
-                  className="text-xs text-red-600 hover:text-red-800 min-h-[44px] px-2 rounded hover:bg-red-50"
-                >
-                  Удалить
-                </button>
+                <UserRowActions onEdit={() => onEdit(u.id)} onDelete={() => onDelete(u.id)} />
               </td>
             </tr>
           ))}

@@ -1,10 +1,11 @@
 'use client';
 
 import { Order } from '@/lib/api';
-import { StatusBadge, formatDate } from '@/components/StatusBadge';
+import { formatDate } from '@/components/StatusBadge';
 import { importanceBadge } from '@/lib/constants';
 import RowActions from '@/components/RowActions';
 import PhotoGallery from '@/components/PhotoGallery';
+import StatusQuickChange from '@/components/StatusQuickChange';
 
 // Ролевая видимость колонок (1:1 с legacy index.php table_headers)
 // type_user: 1=админ, 2=менеджер, 3=монтажник
@@ -140,7 +141,7 @@ const COLUMNS: Column[] = [
   },
   {
     key: 'status', headers: [{ key: 'status', label: 'Статус', sortable: true }], visibleFor: [1, 2, 3],
-    render: (o) => <StatusBadge status={o.status} archived={o.is_archived} withCaret />,
+    render: () => null, // рендерится отдельно в tbody — нужен onChanged (см. actions)
   },
 ];
 
@@ -198,6 +199,8 @@ export default function OrdersTable({
                 <td key={c.key} className={`${compactPad(c.key)} py-3 ${c.key === 'actions' ? 'whitespace-nowrap' : ''}`}>
                   {c.key === 'actions'
                     ? <RowActions order={o} role={role} onChanged={onChanged} />
+                    : c.key === 'status'
+                    ? <StatusQuickChange order={o} onChanged={onChanged} />
                     : c.render(o, role)}
                 </td>
               ))}

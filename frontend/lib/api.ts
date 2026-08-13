@@ -66,6 +66,20 @@ export interface Paginated<T> {
   per_page: number;
 }
 
+export interface MigrationRoleMetrics {
+  role: number;
+  total: number;
+  migrated: number;
+  percent: number;
+}
+
+export interface MigrationMetrics {
+  total: number;
+  migrated: number;
+  percent: number;
+  by_role: MigrationRoleMetrics[];
+}
+
 // v2: JWT в httpOnly cookie (BFF). localStorage больше НЕ используется.
 const TOKEN_KEY = 'mycrm_token'; // сохранён для совместимости старых сессий
 
@@ -187,6 +201,9 @@ export const api = {
     }),
   me: () => request<{ user: User }>('/auth/me'),
 
+  // Миграция на v2 (метрики)
+  migrationMetrics: () => request<MigrationMetrics>('/migration/metrics'),
+
   // Orders
   orders: (params: Record<string, string | number | boolean> = {}) => {
     const qs = new URLSearchParams(
@@ -204,6 +221,7 @@ export const api = {
     request<Order>(`/orders/${id}/comment`, { method: 'PATCH', body: JSON.stringify({ comment, ...(forUser !== undefined ? { for: forUser } : {}) }) }),
   archive: (id: number, archived: boolean) =>
     request<Order>(`/orders/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ archived }) }),
+  deleteOrder: (id: number) => request<{ message: string }>(`/orders/${id}`, { method: 'DELETE' }),
 
   // Photos
   uploadPhoto: (orderId: number, file: File, onProgress?: (percent: number) => void) => {

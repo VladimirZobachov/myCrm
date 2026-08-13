@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Modal from '@/components/Modal';
+import { STATUS_OPTIONS } from '@/components/StatusBadge';
 
 /**
  * Модалка смены статуса (радио 1/2/3, как legacy).
@@ -18,11 +19,7 @@ export default function StatusModal({
 }) {
   const [status, setStatus] = useState(current);
 
-  const options = [
-    { value: 1, label: 'ждет' },
-    { value: 2, label: 'принят' },
-    { value: 3, label: 'готов' },
-  ];
+  const options = STATUS_OPTIONS;
 
   return (
     <Modal onClose={onClose}>

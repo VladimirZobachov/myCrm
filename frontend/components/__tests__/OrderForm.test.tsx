@@ -135,6 +135,15 @@ describe('OrderForm (TDD)', () => {
     expect((opts as RequestInit).method).toBe('PATCH');
   });
 
+  it('#83: введённый текст в полях ввода тёмный (text-slate-900), а не светло-серый', () => {
+    render(<OrderForm role={1} onSaved={() => {}} />);
+    expect(screen.getByLabelText('Вид работ *').className).toContain('text-slate-900');
+    expect(screen.getByLabelText('Бренд *').className).toContain('text-slate-900');
+    expect(screen.getByLabelText('Стоимость *').className).toContain('text-slate-900');
+    expect(screen.getByLabelText('Дата монтажа *').className).toContain('text-slate-900');
+    expect(screen.getByLabelText('Монтажник').className).toContain('text-slate-900');
+  });
+
   it('onSaved вызывается после сохранения', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,

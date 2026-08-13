@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\OrderExportController;
 use App\Http\Controllers\Api\PhotoController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MeController;
+use App\Http\Controllers\Api\MigrationMetricsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,9 @@ Route::middleware('auth:api')->group(function () {
 
     // Пользователи (только админ)
     Route::apiResource('users', UserController::class);
+
+    // Метрики миграции на v2 (только админ, задача #64)
+    Route::get('/migration/metrics', MigrationMetricsController::class);
 
     // Личный кабинет
     Route::get('/me', [MeController::class, 'show']);

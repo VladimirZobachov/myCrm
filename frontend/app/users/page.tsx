@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import UsersTable, { ROLE_LABELS } from '@/components/UsersTable';
 import UserFormModal from '@/components/UserFormModal';
 import ConfirmModal from '@/components/ConfirmModal';
+import UserRowActions from '@/components/UserRowActions';
 import { api, User } from '@/lib/api';
 
 export default function UsersPage() {
@@ -102,9 +103,15 @@ export default function UsersPage() {
                 <div key={u.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                   <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
                     <span className="font-semibold text-slate-900">{u.login}</span>
-                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 whitespace-nowrap">
-                      {ROLE_LABELS[u.type_user] ?? `Роль ${u.type_user}`}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        {ROLE_LABELS[u.type_user] ?? `Роль ${u.type_user}`}
+                      </span>
+                      <UserRowActions
+                        onEdit={() => { setEditing(u); setShowForm(true); }}
+                        onDelete={() => setDeleteId(u.id)}
+                      />
+                    </div>
                   </div>
 
                   <dl className="divide-y divide-slate-100">
@@ -117,21 +124,6 @@ export default function UsersPage() {
                       <dd className="text-slate-700">{u.fio || '—'}</dd>
                     </div>
                   </dl>
-
-                  <div className="flex items-center gap-2 pt-3 mt-1 border-t border-slate-100">
-                    <button
-                      onClick={() => { setEditing(u); setShowForm(true); }}
-                      className="flex-1 min-h-[44px] rounded-lg border border-indigo-600 text-indigo-600 text-sm font-medium hover:bg-indigo-50"
-                    >
-                      Редактировать
-                    </button>
-                    <button
-                      onClick={() => setDeleteId(u.id)}
-                      className="flex-1 min-h-[44px] rounded-lg border border-red-600 text-red-600 text-sm font-medium hover:bg-red-50"
-                    >
-                      Удалить
-                    </button>
-                  </div>
                 </div>
               ))}
             </div>

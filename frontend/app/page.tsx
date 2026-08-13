@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { api, Order, Paginated, User } from '@/lib/api';
-import { StatusBadge, formatDate } from '@/components/StatusBadge';
+import { formatDate } from '@/components/StatusBadge';
 import { importanceBadge } from '@/lib/constants';
 import OrdersTable from '@/components/OrdersTable';
 import ExportModal from '@/components/ExportModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import RowActions from '@/components/RowActions';
 import PhotoGallery from '@/components/PhotoGallery';
+import StatusQuickChange from '@/components/StatusQuickChange';
 
 function AccountIcon() {
   return (
@@ -127,6 +128,7 @@ export default function OrdersPage() {
             <NavTab active={!archived} onClick={() => { setArchived(false); setPage(1); }}>Заказы</NavTab>
             <NavTab active={archived} onClick={() => { setArchived(true); setPage(1); }}>Архив</NavTab>
             <NavTab active={false} href="/users">Пользователи</NavTab>
+            {role === 1 && <NavTab active={false} href="/migration">Миграция</NavTab>}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -183,6 +185,7 @@ export default function OrdersPage() {
             <NavTab active={!archived} onClick={() => { setArchived(false); setPage(1); }}>Заказы</NavTab>
             <NavTab active={archived} onClick={() => { setArchived(true); setPage(1); }}>Архив</NavTab>
             <NavTab active={false} href="/users">Пользователи</NavTab>
+            {role === 1 && <NavTab active={false} href="/migration">Миграция</NavTab>}
             <button
               onClick={() => setShowExport(true)}
               className="ml-auto min-h-[44px] px-3 rounded-lg border border-blue-600 text-blue-600 text-sm font-medium whitespace-nowrap"
@@ -281,7 +284,7 @@ export default function OrdersPage() {
 
                     <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-100">
                       <RowActions order={o} role={role} onChanged={reload} />
-                      <StatusBadge status={o.status} archived={o.is_archived} withCaret />
+                      <StatusQuickChange order={o} onChanged={reload} />
                     </div>
                   </div>
                 );

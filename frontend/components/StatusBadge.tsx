@@ -5,6 +5,13 @@ const STATUS_MAP: Record<number, { label: string; cls: string; dot: string }> = 
   3: { label: 'готов', cls: 'bg-green-500 text-white border-green-500', dot: 'bg-white' },
 };
 
+// Общий список статусов (StatusModal, StatusQuickChange) — держит порядок/подписи в одном месте.
+export const STATUS_OPTIONS = [
+  { value: 1, label: STATUS_MAP[1].label },
+  { value: 2, label: STATUS_MAP[2].label },
+  { value: 3, label: STATUS_MAP[3].label },
+];
+
 export function StatusBadge({
   status,
   archived,

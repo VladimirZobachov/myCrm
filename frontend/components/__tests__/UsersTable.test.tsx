@@ -35,17 +35,25 @@ describe('UsersTable (#36-37)', () => {
     expect(screen.getByText('Администратор')).toBeInTheDocument();
   });
 
-  it('кнопка удаления видна и вызывает onDelete', () => {
+  it('пункт меню «Удалить» видна за кнопкой «Действия» и вызывает onDelete', () => {
     const onDelete = vi.fn();
     render(<UsersTable users={[makeUser()]} onEdit={() => {}} onDelete={onDelete} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
     fireEvent.click(screen.getByRole('button', { name: /Удалить/i }));
     expect(onDelete).toHaveBeenCalledWith(1);
   });
 
-  it('кнопка редактирования вызывает onEdit', () => {
+  it('пункт меню «Редактировать» вызывает onEdit', () => {
     const onEdit = vi.fn();
     render(<UsersTable users={[makeUser()]} onEdit={onEdit} onDelete={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Действия' }));
     fireEvent.click(screen.getByRole('button', { name: /Редактировать/i }));
     expect(onEdit).toHaveBeenCalledWith(1);
+  });
+
+  it('меню действий скрыто до клика на «Действия»', () => {
+    render(<UsersTable users={[makeUser()]} onEdit={() => {}} onDelete={() => {}} />);
+    expect(screen.queryByText('Редактировать')).not.toBeInTheDocument();
+    expect(screen.queryByText('Удалить')).not.toBeInTheDocument();
   });
 });

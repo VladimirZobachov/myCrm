@@ -1,33 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { Order, api } from '@/lib/api';
+import { Order, OrderInput, api } from '@/lib/api';
 import StatusModal from '@/components/StatusModal';
 import CommentModal from '@/components/CommentModal';
+import ConfirmModal from '@/components/ConfirmModal';
 import Modal from '@/components/Modal';
-
-function MoreIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 20 20" className="size-4">
-      <circle cx="10" cy="4" r="1.6" fill="currentColor" />
-      <circle cx="10" cy="10" r="1.6" fill="currentColor" />
-      <circle cx="10" cy="16" r="1.6" fill="currentColor" />
-    </svg>
-  );
-}
+import {
+  MoreIcon,
+  EditIcon,
+  CopyIcon,
+  CommentIcon,
+  ArchiveIcon,
+  UnarchiveIcon,
+  DeleteIcon,
+  StatusChangeIcon,
+} from '@/components/icons';
 
 /**
- * Действия в строке заказа (ролевые, 1:1 с legacy), доступны через
- * кнопку-«три точки» → модалка со списком действий (см. Figma: More icon
- * в первой колонке таблицы, Group 1 / Ellipse 3-5):
- * - Админ (1): изменить статус, комментарий (с выбором «кому»), архив
- * - Менеджер (2): изменить статус, комментарий (comment_manager)
- * - Монтажник (3): изменить статус (auto-assign), комментарий (comments)
+ * Действия в строке заказа (кнопка-«три точки» → дропдаун), по Figma
+ * (фрейм 'menu' id=15:1166 / 67:11077): Редактировать, Копировать,
+ * Комментарий, В архив (только админ), Удалить (только админ).
+ * «Сменить статус» — из старого меню; роль быстрой смены выполняет
+ * стрелка у бейджа статуса (см. StatusQuickChange), но полная модалка
+ * StatusModal остаётся доступной отсюда же.
  */
 export default function RowActions({ order, role, onChanged }: { order: Order; role: number; onChanged: () => void }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [showComment, setShowComment] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function changeStatus(s: number) {
@@ -63,6 +65,46 @@ export default function RowActions({ order, role, onChanged }: { order: Order; r
     }
   }
 
+  async function handleCopy() {
+    setShowMenu(false);
+    setBusy(true);
+    try {
+      const payload: OrderInput = {
+        trc: order.trc,
+        trc_other: order.trc_other,
+        date: order.date,
+        type_work: order.type_work,
+        brand: order.brand,
+        where_print: order.where_print,
+        where_other: order.where_other,
+        photo: order.photo,
+        price: order.price,
+        price_admin: order.price_admin,
+        importance: order.importance,
+        importance_other: order.importance_other,
+        created_for: order.created_for?.id ?? null,
+      };
+      await api.createOrder(payload);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    setShowDeleteConfirm(false);
+    setBusy(true);
+    try {
+      await api.deleteOrder(order.id);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const menuItemCls =
+    'flex items-center gap-3 min-h-[44px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors disabled:opacity-50';
+
   return (
     <div className="relative">
       <button
@@ -80,24 +122,39 @@ export default function RowActions({ order, role, onChanged }: { order: Order; r
             <h2 className="text-lg font-semibold text-blue-600">Действия по заявке №{order.id}</h2>
           </div>
           <div className="px-4 py-3 flex flex-col">
+            <a href={`/orders/${order.id}/edit`} className={menuItemCls}>
+              <EditIcon /> Редактировать
+            </a>
             <button
               onClick={() => { setShowMenu(false); setShowStatus(true); }}
-              className="min-h-[44px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+              disabled={busy}
+              className={menuItemCls}
             >
-              Сменить статус
+              <StatusChangeIcon /> Сменить статус
+            </button>
+            <button onClick={handleCopy} disabled={busy} className={menuItemCls}>
+              <CopyIcon /> Копировать
             </button>
             <button
               onClick={() => { setShowMenu(false); setShowComment(true); }}
-              className="min-h-[44px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+              disabled={busy}
+              className={menuItemCls}
             >
-              Комментарий
+              <CommentIcon /> Комментарий
             </button>
             {role === 1 && (
+              <button onClick={toggleArchive} disabled={busy} className={menuItemCls}>
+                {order.is_archived ? <UnarchiveIcon /> : <ArchiveIcon />}
+                {order.is_archived ? 'Разархивировать' : 'В архив'}
+              </button>
+            )}
+            {role === 1 && (
               <button
-                onClick={toggleArchive}
-                className="min-h-[44px] rounded-lg px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+                onClick={() => { setShowMenu(false); setShowDeleteConfirm(true); }}
+                disabled={busy}
+                className={`${menuItemCls} text-red-600 hover:bg-red-50`}
               >
-                {order.is_archived ? 'Разархивировать' : 'Архив'}
+                <DeleteIcon /> Удалить
               </button>
             )}
           </div>
@@ -118,6 +175,16 @@ export default function RowActions({ order, role, onChanged }: { order: Order; r
 
       {showComment && (
         <CommentModal role={role} onClose={() => setShowComment(false)} onApply={saveComment} />
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="Удалить заказ?"
+          message="Внимание! После удаления все пропадет!"
+          confirmLabel="Удалить"
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDelete}
+        />
       )}
     </div>
   );
