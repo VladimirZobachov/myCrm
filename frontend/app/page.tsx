@@ -128,7 +128,6 @@ export default function OrdersPage() {
             <NavTab active={!archived} onClick={() => { setArchived(false); setPage(1); }}>Заказы</NavTab>
             <NavTab active={archived} onClick={() => { setArchived(true); setPage(1); }}>Архив</NavTab>
             <NavTab active={false} href="/users">Пользователи</NavTab>
-            {role === 1 && <NavTab active={false} href="/migration">Миграция</NavTab>}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -185,7 +184,6 @@ export default function OrdersPage() {
             <NavTab active={!archived} onClick={() => { setArchived(false); setPage(1); }}>Заказы</NavTab>
             <NavTab active={archived} onClick={() => { setArchived(true); setPage(1); }}>Архив</NavTab>
             <NavTab active={false} href="/users">Пользователи</NavTab>
-            {role === 1 && <NavTab active={false} href="/migration">Миграция</NavTab>}
             <button
               onClick={() => setShowExport(true)}
               className="ml-auto min-h-[44px] px-3 rounded-lg border border-blue-600 text-blue-600 text-sm font-medium whitespace-nowrap"
