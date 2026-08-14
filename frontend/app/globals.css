@@ -32,3 +32,10 @@ html {
 button {
   touch-action: manipulation;
 }
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}

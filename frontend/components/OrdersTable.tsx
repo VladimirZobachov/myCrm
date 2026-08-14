@@ -216,7 +216,7 @@ function SortableRow({
               checked={selected}
               onChange={() => onToggleSelect(o.id)}
               onClick={(e) => e.stopPropagation()}
-              className="size-4 accent-blue-600"
+              className="size-[18px] accent-indigo-600 cursor-pointer"
             />
           ) : c.key === 'actions' ? (
             <RowActions order={o} role={role} onChanged={onChanged} />
@@ -290,7 +290,7 @@ export default function OrdersTable({
                     aria-label="Выбрать все на странице"
                     checked={allSelected}
                     onChange={(e) => onToggleSelectAll(e.target.checked)}
-                    className="size-4 accent-blue-600"
+                    className="size-[18px] accent-indigo-600 cursor-pointer"
                   />
                 ) : (
                 <div className="flex flex-col gap-1">

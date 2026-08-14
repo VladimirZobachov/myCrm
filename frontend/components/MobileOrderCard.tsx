@@ -89,7 +89,7 @@ export default function MobileOrderCard({
             aria-label={`Выбрать заявку №${o.id}`}
             checked={selected}
             onChange={() => onToggleSelect(o.id)}
-            className="size-4 accent-blue-600"
+            className="size-[18px] accent-indigo-600 cursor-pointer"
           />
         </label>
         {/* Не <button> намеренно: PointerSensor (RowDragSensor) игнорирует
