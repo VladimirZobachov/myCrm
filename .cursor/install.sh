@@ -19,6 +19,9 @@ php artisan migrate --force
 
 echo "== Frontend (Next.js) =="
 cd "$repo_root/frontend"
+# Next.js 16 requires Node >=22.19; make the image's Node (in /usr/bin) win over
+# any older node that appears earlier in PATH.
+export PATH="/usr/bin:$PATH"
 npm ci
 
 echo "== Setup complete =="

@@ -17,7 +17,7 @@
     },
     {
       "name": "frontend-dev",
-      "command": "cd frontend && BACKEND_API_URL=http://127.0.0.1:8000/api npm run dev",
+      "command": "cd frontend && PATH=\"/usr/bin:$PATH\" BACKEND_API_URL=http://127.0.0.1:8000/api npm run dev",
       "description": "Next.js dev server on http://localhost:3000 (proxies /api/bff to the Laravel API)."
     }
   ]
