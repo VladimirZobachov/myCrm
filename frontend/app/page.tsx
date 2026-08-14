@@ -7,11 +7,11 @@ import ExportModal from '@/components/ExportModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MobileOrderCard from '@/components/MobileOrderCard';
 import { mergeManualOrder } from '@/lib/orderPositions';
+import { RowDragSensor } from '@/lib/dnd';
 import {
   DndContext,
   DragEndEvent,
   KeyboardSensor,
-  PointerSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -150,8 +150,11 @@ export default function OrdersPage() {
     api.saveOrderPositions(merged).catch(() => {});
   }
 
+  // Мобильные карточки перетаскиваются целиком (без ручки) — обычный тап
+  // должен раскрывать аккордеон, поэтому drag активируется только долгим
+  // тапом (delay), а не сразу при касании (задача 14.08.2026).
   const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(RowDragSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -282,7 +285,7 @@ export default function OrdersPage() {
             <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} onReorder={handleReorder} />
 
             {/* Мобильный: карточки-аккордеон (свёрнуты до № + важность, тап разворачивает).
-                Перетаскивание за ручку сохраняет тот же ручной порядок, что и на десктопе. */}
+                Долгий тап по карточке перетаскивает её — тот же ручной порядок, что и на десктопе. */}
             <div className="lg:hidden space-y-3">
               {data.data.length === 0 && (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-500 text-sm">

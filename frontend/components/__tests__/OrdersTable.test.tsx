@@ -126,7 +126,7 @@ describe('OrdersTable — ролевая видимость колонок', () 
     expect(onSort).toHaveBeenCalledWith('trc');
   });
 
-  it('у каждой строки есть ручка drag-and-drop для ручного порядка', () => {
+  it('нет отдельной ручки drag-and-drop — строка перетаскивается целиком, вторых точек в разметке нет', () => {
     render(
       <OrdersTable
         orders={[makeOrder({ id: 1 }), makeOrder({ id: 2 })]}
@@ -137,7 +137,23 @@ describe('OrdersTable — ролевая видимость колонок', () 
         onReorder={vi.fn()}
       />
     );
-    expect(screen.getByRole('button', { name: 'Перетащить заявку №1' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Перетащить заявку №2' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Перетащить заявку/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Действия' })).toHaveLength(2);
+  });
+
+  it('строка заявки перетаскиваема (role="row" от useSortable, зажатие в любом месте, кроме кнопок/ссылок)', () => {
+    render(
+      <OrdersTable
+        orders={[makeOrder({ id: 1 })]}
+        role={1}
+        sort="date_create|DESC"
+        onSort={onSort}
+        onChanged={onChanged}
+        onReorder={vi.fn()}
+      />
+    );
+    const row = screen.getByText('№1').closest('tr');
+    expect(row).toHaveAttribute('aria-roledescription', expect.stringContaining('Заявка №1'));
+    expect(row).toHaveAttribute('tabindex', '0');
   });
 });

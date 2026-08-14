@@ -67,8 +67,18 @@ describe('MobileOrderCard — аккордеон мобильной карточ
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('есть ручка drag-and-drop для ручного порядка карточек', () => {
+  it('нет отдельной ручки drag-and-drop — карточка перетаскивается целиком, тап по ней по-прежнему разворачивает аккордеон', () => {
     render(<MobileOrderCard order={makeOrder()} role={1} onChanged={onChanged} />);
-    expect(screen.getByRole('button', { name: 'Изменить порядок заявки 42' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Изменить порядок/ })).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole('button', { name: /№42/ });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('карточка целиком перетаскиваема (role="group" от useSortable на корневом div)', () => {
+    render(<MobileOrderCard order={makeOrder()} role={1} onChanged={onChanged} />);
+    const card = screen.getByRole('group', { name: /Заявка №42/ });
+    expect(card).toHaveAttribute('tabindex', '0');
   });
 });
