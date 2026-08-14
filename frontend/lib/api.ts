@@ -206,6 +206,28 @@ export const api = {
     request<Order>(`/orders/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ archived }) }),
   deleteOrder: (id: number) => request<{ message: string }>(`/orders/${id}`, { method: 'DELETE' }),
 
+  // Групповые операции над заявками
+  batchStatus: (orderIds: number[], status: number) =>
+    request<{ updated: number[] }>('/orders/batch-status', {
+      method: 'PATCH',
+      body: JSON.stringify({ order_ids: orderIds, status }),
+    }),
+  batchArchive: (orderIds: number[], archived: boolean) =>
+    request<{ updated: number[] }>('/orders/batch-archive', {
+      method: 'PATCH',
+      body: JSON.stringify({ order_ids: orderIds, archived }),
+    }),
+  batchComment: (orderIds: number[], comment: string) =>
+    request<{ updated: number[] }>('/orders/batch-comment', {
+      method: 'PATCH',
+      body: JSON.stringify({ order_ids: orderIds, comment }),
+    }),
+  batchDelete: (orderIds: number[]) =>
+    request<{ deleted: number[] }>('/orders/batch', {
+      method: 'DELETE',
+      body: JSON.stringify({ order_ids: orderIds }),
+    }),
+
   // Ручной порядок заявок (drag-and-drop, персональный для пользователя)
   getOrderPositions: () => request<{ order_ids: number[] | null }>('/orders/positions'),
   saveOrderPositions: (orderIds: number[]) =>

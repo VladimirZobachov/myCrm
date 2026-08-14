@@ -250,4 +250,115 @@ class OrderController extends Controller
 
         return response()->json($order->fresh()->load(['createdBy', 'createdFor']));
     }
+
+    /**
+     * PATCH /api/orders/batch-status
+     * Массовая смена статуса. Заявки фильтруются через scopeVisibleTo —
+     * монтажник может менять статус только уже назначенных ему заявок
+     * (в отличие от одиночного updateStatus() здесь нет auto-assign
+     * неназначенных заявок: это операция над явно выбранным списком,
+     * а не над одной открытой карточкой).
+     */
+    public function batchStatus(Request $request)
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer',
+            'status' => ['required', Rule::in([1, 2, 3])],
+        ]);
+
+        $user = $request->user();
+        $orders = Order::visibleTo($user)->whereIn('id', $data['order_ids'])->get();
+
+        $updated = [];
+        foreach ($orders as $order) {
+            $order->status = $data['status'];
+            $order->save();
+            StatusChangedMail::dispatch($order->id, $order->status);
+            $updated[] = $order->id;
+        }
+
+        return response()->json(['updated' => $updated]);
+    }
+
+    /**
+     * PATCH /api/orders/batch-archive
+     * Массовая архивация/разархивация — та же ролевая видимость, что и
+     * у batchStatus().
+     */
+    public function batchArchive(Request $request)
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer',
+            'archived' => 'required|boolean',
+        ]);
+
+        $user = $request->user();
+        $orders = Order::visibleTo($user)->whereIn('id', $data['order_ids'])->get();
+
+        $updated = [];
+        foreach ($orders as $order) {
+            $order->is_archived = $data['archived'] ? 1 : 0;
+            $order->save();
+            $updated[] = $order->id;
+        }
+
+        return response()->json(['updated' => $updated]);
+    }
+
+    /**
+     * PATCH /api/orders/batch-comment
+     * Массовое добавление комментария — маршрутизация по роли, как в
+     * updateComment(): монтажник и админ пишут в comments, менеджер —
+     * в comment_manager.
+     */
+    public function batchComment(Request $request)
+    {
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer',
+            'comment' => 'required|string',
+        ]);
+
+        $user = $request->user();
+        $orders = Order::visibleTo($user)->whereIn('id', $data['order_ids'])->get();
+
+        $updated = [];
+        foreach ($orders as $order) {
+            if ((int) $user->type_user === 2) {
+                $order->comment_manager = $data['comment'];
+            } else {
+                $order->comments = $data['comment'];
+            }
+            $order->save();
+            CommentChangedMail::dispatch($order->id, $data['comment'], $user->id);
+            $updated[] = $order->id;
+        }
+
+        return response()->json(['updated' => $updated]);
+    }
+
+    /**
+     * DELETE /api/orders/batch
+     * Массовое удаление — по требованию клиента доступно только админу
+     * (строже одиночного destroy(), который разрешён и менеджеру-владельцу).
+     */
+    public function batchDelete(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            abort(403, 'Массовое удаление доступно только администратору');
+        }
+
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer',
+        ]);
+
+        $deleted = Order::whereIn('id', $data['order_ids'])->pluck('id')->all();
+        Order::whereIn('id', $data['order_ids'])->delete();
+
+        return response()->json(['deleted' => $deleted]);
+    }
 }

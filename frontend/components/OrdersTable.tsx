@@ -81,6 +81,10 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'ASC' | 'DESC' }) {
 
 const COLUMNS: Column[] = [
   {
+    key: 'select', headers: [], visibleFor: [1, 2, 3],
+    render: () => null, // рендерится отдельно в tbody — нужен selectedIds/onToggleSelect
+  },
+  {
     key: 'actions', headers: [], visibleFor: [1, 2, 3],
     render: () => null, // рендерится отдельно в tbody — нужен role и onChanged
   },
@@ -174,12 +178,16 @@ function SortableRow({
   role,
   onChanged,
   compactPad,
+  selected,
+  onToggleSelect,
 }: {
   order: Order;
   visible: Column[];
   role: number;
   onChanged: () => void;
   compactPad: (key: string) => string;
+  selected: boolean;
+  onToggleSelect: (id: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: o.id,
@@ -201,7 +209,16 @@ function SortableRow({
     >
       {visible.map((c) => (
         <td key={c.key} className={`${compactPad(c.key)} py-3 ${c.key === 'actions' ? 'whitespace-nowrap' : ''}`}>
-          {c.key === 'actions' ? (
+          {c.key === 'select' ? (
+            <input
+              type="checkbox"
+              aria-label={`Выбрать заявку №${o.id}`}
+              checked={selected}
+              onChange={() => onToggleSelect(o.id)}
+              onClick={(e) => e.stopPropagation()}
+              className="size-4 accent-blue-600"
+            />
+          ) : c.key === 'actions' ? (
             <RowActions order={o} role={role} onChanged={onChanged} />
           ) : c.key === 'status' ? (
             <StatusQuickChange order={o} onChanged={onChanged} />
@@ -221,6 +238,9 @@ export default function OrdersTable({
   onSort,
   onChanged,
   onReorder,
+  selectedIds = new Set<number>(),
+  onToggleSelect = () => {},
+  onToggleSelectAll = () => {},
 }: {
   orders: Order[];
   role: number;
@@ -228,6 +248,9 @@ export default function OrdersTable({
   onSort: (field: string) => void;
   onChanged: () => void;
   onReorder?: (orderIds: number[]) => void;
+  selectedIds?: Set<number>;
+  onToggleSelect?: (id: number) => void;
+  onToggleSelectAll?: (checked: boolean) => void;
 }) {
   const visible = COLUMNS.filter((c) => c.visibleFor.includes(role));
   const [sortField, sortDir] = sort.split('|') as [string, 'ASC' | 'DESC'];
@@ -235,7 +258,8 @@ export default function OrdersTable({
   // паддинг, чтобы освободить место колонке «Вид работ / Бренд» и не
   // выходить за max-w-7xl (1280px) — без этого таблица требовала
   // горизонтального скролла.
-  const compactPad = (key: string) => (['importance', 'photo', 'where_print', 'status'].includes(key) ? 'px-2' : 'px-4');
+  const compactPad = (key: string) => (['select', 'importance', 'photo', 'where_print', 'status'].includes(key) ? 'px-2' : 'px-4');
+  const allSelected = orders.length > 0 && orders.every((o) => selectedIds.has(o.id));
 
   const sensors = useSensors(
     useSensor(RowDragSensor, { activationConstraint: { distance: 8 } }),
@@ -259,7 +283,16 @@ export default function OrdersTable({
         <thead className="border-b border-slate-200">
           <tr className="text-left text-slate-500">
             {visible.map((c) => (
-              <th key={c.key} className={`${compactPad(c.key)} py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' ? 'w-10' : ''}`}>
+              <th key={c.key} className={`${compactPad(c.key)} py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' || c.key === 'select' ? 'w-10' : ''}`}>
+                {c.key === 'select' ? (
+                  <input
+                    type="checkbox"
+                    aria-label="Выбрать все на странице"
+                    checked={allSelected}
+                    onChange={(e) => onToggleSelectAll(e.target.checked)}
+                    className="size-4 accent-blue-600"
+                  />
+                ) : (
                 <div className="flex flex-col gap-1">
                   {c.headers.map((h) => (
                     <span
@@ -272,6 +305,7 @@ export default function OrdersTable({
                     </span>
                   ))}
                 </div>
+                )}
               </th>
             ))}
           </tr>
@@ -280,7 +314,16 @@ export default function OrdersTable({
           <SortableContext items={orders.map((o) => o.id)} strategy={verticalListSortingStrategy}>
             <tbody>
               {orders.map((o) => (
-                <SortableRow key={o.id} order={o} visible={visible} role={role} onChanged={onChanged} compactPad={compactPad} />
+                <SortableRow
+                  key={o.id}
+                  order={o}
+                  visible={visible}
+                  role={role}
+                  onChanged={onChanged}
+                  compactPad={compactPad}
+                  selected={selectedIds.has(o.id)}
+                  onToggleSelect={onToggleSelect}
+                />
               ))}
             </tbody>
           </SortableContext>

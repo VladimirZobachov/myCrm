@@ -59,6 +59,13 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/orders/positions', [OrderPositionController::class, 'show']);
     Route::put('/orders/positions', [OrderPositionController::class, 'update']);
 
+    // Групповые операции — тоже ДОЛЖНЫ стоять перед apiResource('orders'),
+    // иначе /orders/{order} перехватит 'batch-status'/'batch' как id.
+    Route::patch('/orders/batch-status', [OrderController::class, 'batchStatus']);
+    Route::patch('/orders/batch-archive', [OrderController::class, 'batchArchive']);
+    Route::patch('/orders/batch-comment', [OrderController::class, 'batchComment']);
+    Route::delete('/orders/batch', [OrderController::class, 'batchDelete']);
+
     Route::apiResource('orders', OrderController::class);
     Route::post('/orders/{order}/photos', [PhotoController::class, 'store']);
     Route::patch('/orders/{order}/comment', [OrderController::class, 'updateComment']);

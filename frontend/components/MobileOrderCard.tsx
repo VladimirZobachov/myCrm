@@ -20,7 +20,19 @@ import { CSS } from '@dnd-kit/utilities';
  * app/page.tsx) активирует drag, обычный тап по свёрнутой строке
  * разворачивает/сворачивает карточку — см. RowDragSensor.
  */
-export default function MobileOrderCard({ order: o, role, onChanged }: { order: Order; role: number; onChanged: () => void }) {
+export default function MobileOrderCard({
+  order: o,
+  role,
+  onChanged,
+  selected = false,
+  onToggleSelect = () => {},
+}: {
+  order: Order;
+  role: number;
+  onChanged: () => void;
+  selected?: boolean;
+  onToggleSelect?: (id: number) => void;
+}) {
   const [open, setOpen] = useState(false);
   const imp = importanceBadge(o.importance);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -66,6 +78,20 @@ export default function MobileOrderCard({ order: o, role, onChanged }: { order: 
       className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
     >
       <div className="flex items-stretch">
+        {/* Чекбокс — отдельный элемент вне области тапа-разворота (не внутри
+            role="button" ниже), чтобы клик по нему не переключал аккордеон. */}
+        <label
+          className="flex items-center pl-4 pr-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            aria-label={`Выбрать заявку №${o.id}`}
+            checked={selected}
+            onChange={() => onToggleSelect(o.id)}
+            className="size-4 accent-blue-600"
+          />
+        </label>
         {/* Не <button> намеренно: PointerSensor (RowDragSensor) игнорирует
             нажатия на button/a/input/select, а карточка должна перетаскиваться
             длинным тапом именно за эту свёрнутую строку. Доступность (Enter/
@@ -77,7 +103,7 @@ export default function MobileOrderCard({ order: o, role, onChanged }: { order: 
           onKeyDown={toggleKeyDown}
           aria-expanded={open}
           aria-label={`Заявка №${o.id}`}
-          className="flex-1 min-w-0 min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 text-left cursor-pointer"
+          className="flex-1 min-w-0 min-h-[44px] flex items-center justify-between gap-2 pl-2 pr-4 py-3 text-left cursor-pointer"
         >
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
             <span className="text-sm font-semibold text-slate-900 whitespace-nowrap">{formatDate(o.date)}</span>

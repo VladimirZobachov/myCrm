@@ -5,6 +5,7 @@ import { api, Order, Paginated, User } from '@/lib/api';
 import OrdersTable from '@/components/OrdersTable';
 import ExportModal from '@/components/ExportModal';
 import ConfirmModal from '@/components/ConfirmModal';
+import BatchActions from '@/components/BatchActions';
 import MobileOrderCard from '@/components/MobileOrderCard';
 import { mergeManualOrder } from '@/lib/orderPositions';
 import { RowDragSensor } from '@/lib/dnd';
@@ -96,6 +97,20 @@ export default function OrdersPage() {
   const [me, setMe] = useState<User | null>(null);
   const [showExport, setShowExport] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll(checked: boolean) {
+    setSelectedIds(checked && data ? new Set(data.data.map((o) => o.id)) : new Set());
+  }
 
   function fetchOrders() {
     setLoading(true);
@@ -282,7 +297,7 @@ export default function OrdersPage() {
         {data && !loading && (
           <>
             {/* Десктоп: таблица (ролевые колонки) */}
-            <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} onReorder={handleReorder} />
+            <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} onReorder={handleReorder} selectedIds={selectedIds} onToggleSelect={toggleSelect} onToggleSelectAll={toggleSelectAll} />
 
             {/* Мобильный: карточки-аккордеон (свёрнуты до № + важность, тап разворачивает).
                 Долгий тап по карточке перетаскивает её — тот же ручной порядок, что и на десктопе. */}
@@ -295,7 +310,7 @@ export default function OrdersPage() {
               <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleMobileDragEnd}>
                 <SortableContext items={data.data.map((o) => o.id)} strategy={verticalListSortingStrategy}>
                   {data.data.map((o) => (
-                    <MobileOrderCard key={o.id} order={o} role={role} onChanged={reload} />
+                    <MobileOrderCard key={o.id} order={o} role={role} onChanged={reload} selected={selectedIds.has(o.id)} onToggleSelect={toggleSelect} />
                   ))}
                 </SortableContext>
               </DndContext>
@@ -318,6 +333,8 @@ export default function OrdersPage() {
           onConfirm={doLogout}
         />
       )}
+
+      <BatchActions selectedIds={selectedIds} role={role} onDone={() => { setSelectedIds(new Set()); reload(); }} />
     </main>
   );
 }

@@ -16,7 +16,7 @@ async function proxy(req: NextRequest, params: { path: string[] }) {
 
   // arrayBuffer, а не text() — тело может быть бинарным (multipart/form-data с фото),
   // текстовый роундтрип через UTF-8 портит байты изображения.
-  const body = ['POST', 'PATCH', 'PUT'].includes(req.method) ? await req.arrayBuffer() : undefined;
+  const body = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) ? await req.arrayBuffer() : undefined;
 
   const target = `${BACKEND_API}/${pathStr}${req.nextUrl.search}`;
   const res = await fetch(target, { method: req.method, headers, body });
