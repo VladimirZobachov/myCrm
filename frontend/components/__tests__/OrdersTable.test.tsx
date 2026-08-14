@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import OrdersTable from '@/components/OrdersTable';
 import { Order } from '@/lib/api';
 
@@ -155,5 +155,86 @@ describe('OrdersTable — ролевая видимость колонок', () 
     const row = screen.getByText('№1').closest('tr');
     expect(row).toHaveAttribute('aria-roledescription', expect.stringContaining('Заявка №1'));
     expect(row).toHaveAttribute('tabindex', '0');
+  });
+});
+
+describe('OrdersTable — групповой выбор (чекбоксы строк скрыты по умолчанию)', () => {
+  const onSort = vi.fn();
+  const onChanged = vi.fn();
+
+  it('по умолчанию виден только главный чекбокс «Выбрать», чекбоксов в строках нет', () => {
+    render(<OrdersTable orders={[makeOrder({ id: 1 })]} role={1} sort="date_create|DESC" onSort={onSort} onChanged={onChanged} />);
+
+    expect(screen.getByRole('checkbox', { name: 'Выбрать' })).toBeInTheDocument();
+    const row = screen.getByText('№1').closest('tr')!;
+    expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('главный чекбокс имеет доступное имя «Выбрать» и вызывает onToggleSelectionMode при клике', () => {
+    const onToggleSelectionMode = vi.fn();
+    render(
+      <OrdersTable
+        orders={[makeOrder({ id: 1 })]}
+        role={1}
+        sort="date_create|DESC"
+        onSort={onSort}
+        onChanged={onChanged}
+        onToggleSelectionMode={onToggleSelectionMode}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Выбрать' }));
+    expect(onToggleSelectionMode).toHaveBeenCalledWith(true);
+  });
+
+  it('в режиме выбора (selectionMode) чекбоксы строк появляются', () => {
+    render(
+      <OrdersTable
+        orders={[makeOrder({ id: 1 })]}
+        role={1}
+        sort="date_create|DESC"
+        onSort={onSort}
+        onChanged={onChanged}
+        selectionMode
+      />
+    );
+
+    const row = screen.getByText('№1').closest('tr')!;
+    expect(within(row).getByRole('checkbox', { name: 'Выбрать заявку №1' })).toBeInTheDocument();
+  });
+
+  it('в режиме выбора клик по чекбоксу строки вызывает onToggleSelect с id заявки', () => {
+    const onToggleSelect = vi.fn();
+    render(
+      <OrdersTable
+        orders={[makeOrder({ id: 5 })]}
+        role={1}
+        sort="date_create|DESC"
+        onSort={onSort}
+        onChanged={onChanged}
+        selectionMode
+        selectedIds={new Set()}
+        onToggleSelect={onToggleSelect}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Выбрать заявку №5' }));
+    expect(onToggleSelect).toHaveBeenCalledWith(5);
+  });
+
+  it('когда все заявки выбраны в режиме выбора, главный чекбокс отмечен', () => {
+    render(
+      <OrdersTable
+        orders={[makeOrder({ id: 1 }), makeOrder({ id: 2 })]}
+        role={1}
+        sort="date_create|DESC"
+        onSort={onSort}
+        onChanged={onChanged}
+        selectionMode
+        selectedIds={new Set([1, 2])}
+      />
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Выбрать' })).toBeChecked();
   });
 });

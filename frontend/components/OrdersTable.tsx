@@ -178,6 +178,7 @@ function SortableRow({
   role,
   onChanged,
   compactPad,
+  selectionMode,
   selected,
   onToggleSelect,
 }: {
@@ -186,6 +187,7 @@ function SortableRow({
   role: number;
   onChanged: () => void;
   compactPad: (key: string) => string;
+  selectionMode: boolean;
   selected: boolean;
   onToggleSelect: (id: number) => void;
 }) {
@@ -210,14 +212,16 @@ function SortableRow({
       {visible.map((c) => (
         <td key={c.key} className={`${compactPad(c.key)} py-3 ${c.key === 'actions' ? 'whitespace-nowrap' : ''}`}>
           {c.key === 'select' ? (
-            <input
-              type="checkbox"
-              aria-label={`Выбрать заявку №${o.id}`}
-              checked={selected}
-              onChange={() => onToggleSelect(o.id)}
-              onClick={(e) => e.stopPropagation()}
-              className="size-[18px] accent-indigo-600 cursor-pointer"
-            />
+            selectionMode && (
+              <input
+                type="checkbox"
+                aria-label={`Выбрать заявку №${o.id}`}
+                checked={selected}
+                onChange={() => onToggleSelect(o.id)}
+                onClick={(e) => e.stopPropagation()}
+                className="size-[18px] accent-indigo-600 cursor-pointer animate-check-in"
+              />
+            )
           ) : c.key === 'actions' ? (
             <RowActions order={o} role={role} onChanged={onChanged} />
           ) : c.key === 'status' ? (
@@ -238,9 +242,10 @@ export default function OrdersTable({
   onSort,
   onChanged,
   onReorder,
+  selectionMode = false,
   selectedIds = new Set<number>(),
   onToggleSelect = () => {},
-  onToggleSelectAll = () => {},
+  onToggleSelectionMode = () => {},
 }: {
   orders: Order[];
   role: number;
@@ -248,9 +253,10 @@ export default function OrdersTable({
   onSort: (field: string) => void;
   onChanged: () => void;
   onReorder?: (orderIds: number[]) => void;
+  selectionMode?: boolean;
   selectedIds?: Set<number>;
   onToggleSelect?: (id: number) => void;
-  onToggleSelectAll?: (checked: boolean) => void;
+  onToggleSelectionMode?: (checked: boolean) => void;
 }) {
   const visible = COLUMNS.filter((c) => c.visibleFor.includes(role));
   const [sortField, sortDir] = sort.split('|') as [string, 'ASC' | 'DESC'];
@@ -259,7 +265,7 @@ export default function OrdersTable({
   // выходить за max-w-7xl (1280px) — без этого таблица требовала
   // горизонтального скролла.
   const compactPad = (key: string) => (['select', 'importance', 'photo', 'where_print', 'status'].includes(key) ? 'px-2' : 'px-4');
-  const allSelected = orders.length > 0 && orders.every((o) => selectedIds.has(o.id));
+  const allSelected = selectionMode && orders.length > 0 && orders.every((o) => selectedIds.has(o.id));
 
   const sensors = useSensors(
     useSensor(RowDragSensor, { activationConstraint: { distance: 8 } }),
@@ -283,15 +289,18 @@ export default function OrdersTable({
         <thead className="border-b border-slate-200">
           <tr className="text-left text-slate-500">
             {visible.map((c) => (
-              <th key={c.key} className={`${compactPad(c.key)} py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' || c.key === 'select' ? 'w-10' : ''}`}>
+              <th key={c.key} className={`${compactPad(c.key)} py-3 text-xs font-semibold whitespace-nowrap ${c.key === 'actions' ? 'w-10' : ''}`}>
                 {c.key === 'select' ? (
-                  <input
-                    type="checkbox"
-                    aria-label="Выбрать все на странице"
-                    checked={allSelected}
-                    onChange={(e) => onToggleSelectAll(e.target.checked)}
-                    className="size-[18px] accent-indigo-600 cursor-pointer"
-                  />
+                  <label className="inline-flex items-center gap-1.5 font-normal text-slate-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      aria-label="Выбрать"
+                      checked={allSelected}
+                      onChange={(e) => onToggleSelectionMode(e.target.checked)}
+                      className="size-[18px] accent-indigo-600 cursor-pointer"
+                    />
+                    <span>Выбрать</span>
+                  </label>
                 ) : (
                 <div className="flex flex-col gap-1">
                   {c.headers.map((h) => (
@@ -321,6 +330,7 @@ export default function OrdersTable({
                   role={role}
                   onChanged={onChanged}
                   compactPad={compactPad}
+                  selectionMode={selectionMode}
                   selected={selectedIds.has(o.id)}
                   onToggleSelect={onToggleSelect}
                 />

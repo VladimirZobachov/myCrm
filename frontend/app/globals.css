@@ -39,3 +39,19 @@ input[type="checkbox"] {
   accent-color: #4f46e5;
   cursor: pointer;
 }
+
+/* Появление чекбоксов строк при включении режима выбора (главный чекбокс «Выбрать») */
+@keyframes check-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-check-in {
+  animation: check-in 150ms ease-out;
+}

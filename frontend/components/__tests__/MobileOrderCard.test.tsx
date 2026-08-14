@@ -82,3 +82,29 @@ describe('MobileOrderCard — аккордеон мобильной карточ
     expect(card).toHaveAttribute('tabindex', '0');
   });
 });
+
+describe('MobileOrderCard — групповой выбор (чекбокс скрыт вне режима выбора)', () => {
+  const onChanged = vi.fn();
+
+  it('чекбокс не рендерится по умолчанию (selectionMode выключен)', () => {
+    render(<MobileOrderCard order={makeOrder()} role={1} onChanged={onChanged} />);
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('в режиме выбора чекбокс появляется и клик по нему вызывает onToggleSelect', () => {
+    const onToggleSelect = vi.fn();
+    render(<MobileOrderCard order={makeOrder()} role={1} onChanged={onChanged} selectionMode onToggleSelect={onToggleSelect} />);
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Выбрать заявку №42' });
+    fireEvent.click(checkbox);
+    expect(onToggleSelect).toHaveBeenCalledWith(42);
+  });
+
+  it('клик по чекбоксу не переключает разворот аккордеона', () => {
+    render(<MobileOrderCard order={makeOrder()} role={1} onChanged={onChanged} selectionMode />);
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Выбрать заявку №42' });
+    fireEvent.click(checkbox);
+    expect(screen.getByRole('button', { name: /№42/ })).toHaveAttribute('aria-expanded', 'false');
+  });
+});

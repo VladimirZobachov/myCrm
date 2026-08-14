@@ -98,6 +98,7 @@ export default function OrdersPage() {
   const [showExport, setShowExport] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
 
   function toggleSelect(id: number) {
     setSelectedIds((prev) => {
@@ -108,7 +109,11 @@ export default function OrdersPage() {
     });
   }
 
-  function toggleSelectAll(checked: boolean) {
+  // Главный чекбокс «Выбрать» в шапке таблицы одновременно включает режим
+  // выбора (показывает чекбоксы строк) и выбирает все заявки страницы;
+  // повторный клик (или «×» в BatchActions) снимает выделение и выключает режим.
+  function toggleSelectionMode(checked: boolean) {
+    setSelectionMode(checked);
     setSelectedIds(checked && data ? new Set(data.data.map((o) => o.id)) : new Set());
   }
 
@@ -297,7 +302,7 @@ export default function OrdersPage() {
         {data && !loading && (
           <>
             {/* Десктоп: таблица (ролевые колонки) */}
-            <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} onReorder={handleReorder} selectedIds={selectedIds} onToggleSelect={toggleSelect} onToggleSelectAll={toggleSelectAll} />
+            <OrdersTable orders={data.data} role={role} sort={sort} onSort={toggleSort} onChanged={reload} onReorder={handleReorder} selectionMode={selectionMode} selectedIds={selectedIds} onToggleSelect={toggleSelect} onToggleSelectionMode={toggleSelectionMode} />
 
             {/* Мобильный: карточки-аккордеон (свёрнуты до № + важность, тап разворачивает).
                 Долгий тап по карточке перетаскивает её — тот же ручной порядок, что и на десктопе. */}
@@ -310,7 +315,7 @@ export default function OrdersPage() {
               <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleMobileDragEnd}>
                 <SortableContext items={data.data.map((o) => o.id)} strategy={verticalListSortingStrategy}>
                   {data.data.map((o) => (
-                    <MobileOrderCard key={o.id} order={o} role={role} onChanged={reload} selected={selectedIds.has(o.id)} onToggleSelect={toggleSelect} />
+                    <MobileOrderCard key={o.id} order={o} role={role} onChanged={reload} selectionMode={selectionMode} selected={selectedIds.has(o.id)} onToggleSelect={toggleSelect} />
                   ))}
                 </SortableContext>
               </DndContext>
@@ -334,7 +339,7 @@ export default function OrdersPage() {
         />
       )}
 
-      <BatchActions selectedIds={selectedIds} role={role} onDone={() => { setSelectedIds(new Set()); reload(); }} />
+      <BatchActions selectedIds={selectedIds} role={role} onDone={() => { setSelectedIds(new Set()); setSelectionMode(false); reload(); }} />
     </main>
   );
 }
