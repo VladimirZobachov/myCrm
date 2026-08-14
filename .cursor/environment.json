@@ -1,0 +1,24 @@
+{
+  "name": "myCRM (Laravel API + Next.js)",
+  "user": "ubuntu",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "install": "./.cursor/install.sh",
+  "ports": [
+    { "name": "backend-api", "port": 8000 },
+    { "name": "frontend", "port": 3000 }
+  ],
+  "terminals": [
+    {
+      "name": "backend-api",
+      "command": "cd backend && php artisan serve --host=127.0.0.1 --port=8000",
+      "description": "Laravel API server on http://127.0.0.1:8000 (health: /api/health)."
+    },
+    {
+      "name": "frontend-dev",
+      "command": "cd frontend && BACKEND_API_URL=http://127.0.0.1:8000/api npm run dev",
+      "description": "Next.js dev server on http://localhost:3000 (proxies /api/bff to the Laravel API)."
+    }
+  ]
+}
